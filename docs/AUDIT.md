@@ -21,7 +21,7 @@ Each master-prompt phase, with what is built and how it was verified.
 | 11 Reminders & notifications | Implemented | Server sweep: timezone, quiet hours (deferred delivery), kinds, deterministic ids (no duplicates), FCM + email, retries 5/15/45, honest `sent` vs `deliveredAt`; generic lock-screen text; planner unit-tested | Live FCM/Scheduler run |
 | 12 Backend | Implemented | Collections, rules, indexes, Storage rules, 18 functions, validation in client and rules, export, account deletion, backups | First deploy |
 | 13 Security & privacy | Done (design) | See SECURITY.md: RBAC, App Check switch, rate limits, audit logs, minimised logs, DPDP self-assessment | Guardian-consent flow; legal review; pen test |
-| 14 Testing | Done | 109 unit tests, 22 e2e/a11y checks, ~35 rules tests (CI emulator), typecheck, lint, builds | Rules tests have not run locally (emulator download blocked here) — CI runs them |
+| 14 Testing | Done | 112 unit tests, 22 e2e/a11y checks, ~35 rules tests (CI emulator), typecheck, lint, builds | Rules tests have not run locally (emulator download blocked here) — CI runs them |
 | 15 Deployment | Ready, not deployed | Production build, `apphosting.yaml`, env docs, CI, seed script, one-file Demo | Firebase project + keys; deployed URL |
 
 ## Fixed during this work
