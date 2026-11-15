@@ -1,0 +1,40 @@
+# Firebase App Hosting config for the Next.js web app.
+# Create the backend once:  firebase apphosting:backends:create --project <id>
+# Public web config values are safe to ship (access is enforced by the rules);
+# set them in the App Hosting console or here. Secrets are never set here.
+runConfig:
+  minInstances: 0
+  maxInstances: 4
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "replace-with-web-api-key"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "your-project.firebaseapp.com"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "your-project-id"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "replace-with-web-app-id"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "your-project-id.firebasestorage.app"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "replace-with-sender-id"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION
+    value: asia-south1
+    availability: [BUILD, RUNTIME]
+  # Optional: web push and App Check
+  - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY
+    value: ""
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY
+    value: ""
+    availability: [BUILD, RUNTIME]

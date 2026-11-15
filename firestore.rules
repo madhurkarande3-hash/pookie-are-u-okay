@@ -1,0 +1,299 @@
+rules_version = '2';
+
+// Pookie access control. The elder owns everything under elders/{elderId}
+// (elderId == the elder's auth uid). Care Circle members get exactly the
+// permissions the elder granted, only while their membership is "active",
+// and nothing at all while the elder has paused sharing.
+// Mirrors src/lib/domain/permissions.ts.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isElder(elderId) { return signedIn() && request.auth.uid == elderId; }
+    function verifiedEmail() {
+      return signedIn() && request.auth.token.email_verified == true ? request.auth.token.email : null;
+    }
+
+    function elderData(elderId) {
+      return get(/databases/$(database)/documents/elders/$(elderId)).data;
+    }
+    function memberPath(elderId) {
+      return /databases/$(database)/documents/elders/$(elderId)/members/$(request.auth.uid);
+    }
+    function activeMember(elderId) {
+      return signedIn()
+        && exists(memberPath(elderId))
+        && get(memberPath(elderId)).data.status == 'active'
+        && elderData(elderId).consent.sharingPaused != true;
+    }
+    function hasPerm(elderId, perm) {
+      return activeMember(elderId) && get(memberPath(elderId)).data.permissions[perm] == true;
+    }
+
+    function isBool(v) { return v is bool; }
+    function shortText(v, max) { return v is string && v.size() <= max; }
+    function isTime(v) { return v is string && v.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$'); }
+    function isDate(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+    function validPermissions(p) {
+      return p is map
+        && p.keys().hasOnly(['viewMedications', 'viewAppointments', 'viewCheckins', 'viewSummaries',
+                             'viewLifebook', 'contributeLifebook', 'proposeSchedule', 'manageCare', 'receiveHelp'])
+        && p.values().toSet().hasOnly([true, false]);
+    }
+
+    // Pointer from an account to its elder + role. Grants no data access by itself.
+    match /users/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['role', 'elderId', 'name'])
+        && request.resource.data.role in ['elder', 'family', 'caregiver']
+        && shortText(request.resource.data.elderId, 128)
+        && shortText(request.resource.data.name, 80)
+        && (request.resource.data.role != 'elder' || request.resource.data.elderId == uid);
+
+      // Content-free "something was shared" notices. Written only by the
+      // notifyOnShared* Cloud Functions (Admin SDK); the owner may read,
+      // mark as read, or dismiss them.
+      // Devices registered for push. Written by their owner; read by the reminder sweep (Admin SDK).
+      match /devices/{deviceId} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['token', 'createdAt', 'userAgent'])
+          && shortText(request.resource.data.token, 4096)
+          && shortText(request.resource.data.userAgent, 300);
+      }
+
+      // Each person's own reminder preferences; read by the reminder sweep (Admin SDK).
+      match /settings/notify {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['timezone', 'quietStart', 'quietEnd', 'kinds', 'channels', 'updatedAt'])
+          && shortText(request.resource.data.timezone, 64)
+          && isTime(request.resource.data.quietStart)
+          && isTime(request.resource.data.quietEnd)
+          && request.resource.data.kinds.keys().hasOnly(['medicine', 'checkin', 'appointment', 'circle'])
+          && request.resource.data.kinds.values().toSet().hasOnly([true, false])
+          && isBool(request.resource.data.channels.push)
+          && isBool(request.resource.data.channels.email);
+      }
+
+      match /notices/{noticeId} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+          && request.resource.data.read == true;
+        allow create: if false;
+      }
+    }
+
+    // Server-only collections: AI rate limits and the Trigger Email queue.
+    match /rateLimits/{id} { allow read, write: if false; }
+    match /mail/{id} { allow read, write: if false; }
+
+    // An invitee may find invitations addressed to their verified email.
+    match /{path=**}/invites/{inviteId} {
+      allow read: if verifiedEmail() != null && resource.data.email == verifiedEmail();
+    }
+
+    match /elders/{elderId} {
+      allow read: if isElder(elderId) || activeMember(elderId);
+      allow delete: if isElder(elderId);
+      allow create, update: if isElder(elderId)
+        && shortText(request.resource.data.fullName, 80)
+        && shortText(request.resource.data.preferredName, 80)
+        && request.resource.data.pookie in ['sweet', 'cool']
+        && (!('companion' in request.resource.data) || request.resource.data.companion in ['pookie', 'granny', 'kaka'])
+        && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.matches('^$|^[+]?[0-9][0-9 ()-]{5,19}$')))
+        && request.resource.data.language in ['en', 'hi']
+        && isBool(request.resource.data.consent.aiPersonalization)
+        && isBool(request.resource.data.consent.saveSummaries)
+        && isBool(request.resource.data.consent.reminders)
+        && isBool(request.resource.data.consent.sharingPaused);
+
+      match /invites/{email} {
+        allow read, delete: if isElder(elderId);
+        allow create: if isElder(elderId)
+          && request.resource.data.email == email
+          && request.resource.data.status == 'pending'
+          && request.resource.data.role in ['family', 'caregiver']
+          && shortText(request.resource.data.name, 80)
+          && validPermissions(request.resource.data.permissions);
+        // The elder may adjust permissions before acceptance…
+        allow update: if isElder(elderId)
+          && resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permissions'])
+          && validPermissions(request.resource.data.permissions);
+        // …and the invitee may only mark it accepted (in the same batch as joining).
+        allow update: if verifiedEmail() == email
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'accepted'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt']);
+        // …or decline it.
+        allow update: if verifiedEmail() == email
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'declined'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'declinedAt']);
+      }
+
+      match /members/{uid} {
+        allow read: if isElder(elderId) || (signedIn() && request.auth.uid == uid);
+        // Joining requires a pending invitation for the caller's verified email,
+        // consumed in the same batch, with exactly the role/permissions the elder chose.
+        allow create: if signedIn() && request.auth.uid == uid
+          && verifiedEmail() != null
+          && get(/databases/$(database)/documents/elders/$(elderId)/invites/$(verifiedEmail())).data.status == 'pending'
+          && getAfter(/databases/$(database)/documents/elders/$(elderId)/invites/$(verifiedEmail())).data.status == 'accepted'
+          && request.resource.data.status == 'active'
+          && request.resource.data.email == verifiedEmail()
+          && request.resource.data.role == get(/databases/$(database)/documents/elders/$(elderId)/invites/$(verifiedEmail())).data.role
+          && request.resource.data.permissions == get(/databases/$(database)/documents/elders/$(elderId)/invites/$(verifiedEmail())).data.permissions;
+        // Only the elder changes permissions or pauses a member.
+        allow update: if isElder(elderId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permissions', 'status'])
+          && request.resource.data.status in ['active', 'paused']
+          && validPermissions(request.resource.data.permissions);
+        // The elder can revoke; a member can leave.
+        allow delete: if isElder(elderId) || (signedIn() && request.auth.uid == uid);
+      }
+
+      match /medications/{id} {
+        allow read: if isElder(elderId) || hasPerm(elderId, 'viewMedications') || hasPerm(elderId, 'manageCare');
+        allow delete: if isElder(elderId) || hasPerm(elderId, 'manageCare');
+        allow create, update: if (isElder(elderId) || hasPerm(elderId, 'manageCare'))
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+          && shortText(request.resource.data.dose, 120)
+          && shortText(request.resource.data.notes, 1000)
+          && request.resource.data.times is list && request.resource.data.times.size() > 0 && request.resource.data.times.size() <= 8
+          && isBool(request.resource.data.active)
+          && (!('frequency' in request.resource.data) || request.resource.data.frequency.kind in ['daily', 'weekdays', 'interval'])
+          && (!('startDate' in request.resource.data) || isDate(request.resource.data.startDate))
+          && (!('endDate' in request.resource.data) || request.resource.data.endDate == null || isDate(request.resource.data.endDate));
+      }
+
+      // Only the elder can say a dose was taken or missed.
+      match /doseLogs/{id} {
+        allow read: if isElder(elderId) || hasPerm(elderId, 'viewMedications') || hasPerm(elderId, 'manageCare');
+        allow delete: if isElder(elderId);
+        allow create, update: if isElder(elderId)
+          && request.resource.data.status in ['taken', 'missed']
+          && isDate(request.resource.data.dateKey)
+          && isTime(request.resource.data.time);
+      }
+
+      match /appointments/{id} {
+        // Viewers see only visits the elder shared; those who manage care see all.
+        allow read: if isElder(elderId) || hasPerm(elderId, 'manageCare')
+          || (hasPerm(elderId, 'viewAppointments') && resource.data.get('shareWithCircle', true) == true);
+        allow delete: if isElder(elderId) || hasPerm(elderId, 'manageCare');
+        allow create, update: if (isElder(elderId) || hasPerm(elderId, 'manageCare'))
+          && (!('status' in request.resource.data) || request.resource.data.status in ['scheduled', 'completed', 'cancelled'])
+          && (!('prep' in request.resource.data) || shortText(request.resource.data.prep, 1000))
+          && (!('shareWithCircle' in request.resource.data) || isBool(request.resource.data.shareWithCircle))
+          && request.resource.data.doctor is string && request.resource.data.doctor.size() > 0 && request.resource.data.doctor.size() <= 80
+          && isDate(request.resource.data.date)
+          && isTime(request.resource.data.time)
+          && shortText(request.resource.data.location, 120)
+          && shortText(request.resource.data.notes, 1000);
+      }
+
+      // Private unless the elder ticked "share" on that specific check-in.
+      match /checkins/{id} {
+        allow read: if isElder(elderId) || (hasPerm(elderId, 'viewCheckins') && resource.data.shareWithCircle == true);
+        allow delete: if isElder(elderId);
+        allow create, update: if isElder(elderId)
+          && request.resource.data.mood in [1, 2, 3, 4, 5]
+          && request.resource.data.sleep in [1, 2, 3, 4, 5]
+          && request.resource.data.energy in [1, 2, 3, 4, 5]
+          && request.resource.data.assistance in ['none', 'little', 'lot']
+          && shortText(request.resource.data.note, 1000)
+          && isBool(request.resource.data.shareWithCircle);
+      }
+
+      match /lifebook/{id} {
+        // Viewers see only memories the elder chose to share; contributors see their own suggestions.
+        allow read: if isElder(elderId)
+          || (hasPerm(elderId, 'viewLifebook') && resource.data.get('shareWithCircle', true) == true)
+          || (hasPerm(elderId, 'contributeLifebook') && resource.data.source.byUid == request.auth.uid);
+        allow update, delete: if isElder(elderId);
+        // Circle contributions are attributed and always start unconfirmed.
+        allow create: if shortText(request.resource.data.title, 120)
+          && shortText(request.resource.data.detail, 2000)
+          && request.resource.data.category in ['people', 'stories', 'favorites', 'everyday', 'milestones', 'places', 'photos', 'voice']
+          && (!('media' in request.resource.data) || request.resource.data.media == null
+              || (request.resource.data.media.kind in ['photo', 'audio'] && request.resource.data.media.path.matches('^elders/' + elderId + '/media/.*')))
+          && (!('history' in request.resource.data) || (request.resource.data.history is list && request.resource.data.history.size() <= 10))
+          && (isElder(elderId)
+              || (hasPerm(elderId, 'contributeLifebook')
+                  && request.resource.data.confirmed == false
+                  && request.resource.data.source.type == 'circle'
+                  && request.resource.data.source.byUid == request.auth.uid));
+      }
+
+      match /schedules/{id} {
+        allow read: if isElder(elderId) || activeMember(elderId);
+        allow update, delete: if isElder(elderId);
+        // Members can only propose; the elder accepts, changes or declines.
+        allow create: if isTime(request.resource.data.time)
+          && shortText(request.resource.data.label, 80)
+          && (!('onDate' in request.resource.data) || request.resource.data.onDate == null || isDate(request.resource.data.onDate))
+          && (isElder(elderId)
+              || (hasPerm(elderId, 'proposeSchedule')
+                  && request.resource.data.status == 'proposed'
+                  && request.resource.data.proposedBy.uid == request.auth.uid));
+      }
+
+      // Reminders planned and sent by the reminderSweep function (Admin SDK).
+      // The elder may read them and record that one actually reached their device.
+      match /notifications/{id} {
+        allow read: if isElder(elderId);
+        allow update: if isElder(elderId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deliveredAt'])
+          && request.resource.data.deliveredAt is timestamp;
+        allow create, delete: if false;
+      }
+
+      // Per-reply metadata (time, language, persona, length). Never the words.
+      match /conversationMetadata/{id} {
+        allow read, delete: if isElder(elderId);
+        allow create, update: if false;
+      }
+
+      // Who changed a permission, consent, memory or medicine, and when. Written by functions only.
+      match /auditLogs/{id} {
+        allow read: if isElder(elderId);
+        allow write: if false;
+      }
+
+      // "I'd like some help": created only by the elder, never automatically.
+      // Members allowed to receive help may read it and say they are on it.
+      match /helpRequests/{id} {
+        allow read: if isElder(elderId) || hasPerm(elderId, 'receiveHelp');
+        allow delete: if isElder(elderId);
+        allow create: if isElder(elderId)
+          && request.resource.data.status == 'open'
+          && request.resource.data.acknowledgedBy == null
+          && shortText(request.resource.data.message, 500);
+        allow update: if isElder(elderId)
+          && request.resource.data.status in ['open', 'acknowledged', 'resolved']
+          && shortText(request.resource.data.message, 500);
+        allow update: if hasPerm(elderId, 'receiveHelp')
+          && resource.data.status == 'open'
+          && request.resource.data.status == 'acknowledged'
+          && request.resource.data.acknowledgedBy.uid == request.auth.uid
+          && shortText(request.resource.data.acknowledgedBy.name, 80)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acknowledgedBy', 'acknowledgedAt']);
+      }
+
+      // Saved only with the elder's consent; visible to the circle only if shared.
+      match /summaries/{id} {
+        allow read: if isElder(elderId) || (hasPerm(elderId, 'viewSummaries') && resource.data.shared == true);
+        allow delete: if isElder(elderId);
+        allow create, update: if isElder(elderId)
+          && elderData(elderId).consent.saveSummaries == true
+          && request.resource.data.feeling in ['good', 'okay', 'low']
+          && shortText(request.resource.data.note, 1000)
+          && isBool(request.resource.data.shared);
+      }
+    }
+  }
+}

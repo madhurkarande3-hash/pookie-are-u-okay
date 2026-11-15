@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// LifeBook photos and voice memories: elders/{elderId}/media/{uploaderUid}/{file}
+// Mirrors firestore.rules: the elder owns everything; members need the
+// matching LifeBook permission while active and while sharing is not paused.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function member(elderId) {
+      return firestore.get(/databases/(default)/documents/elders/$(elderId)/members/$(request.auth.uid));
+    }
+    function activeWith(elderId, perm) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/elders/$(elderId)/members/$(request.auth.uid))
+        && member(elderId).data.status == 'active'
+        && member(elderId).data.permissions[perm] == true
+        && firestore.get(/databases/(default)/documents/elders/$(elderId)).data.consent.sharingPaused != true;
+    }
+    function isMedia() {
+      return request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)|audio/(webm|ogg|mp4|mpeg|wav).*');
+    }
+
+    match /elders/{elderId}/media/{uploader}/{file} {
+      allow read: if (signedIn() && request.auth.uid == elderId)
+        || activeWith(elderId, 'viewLifebook')
+        || (activeWith(elderId, 'contributeLifebook') && request.auth.uid == uploader);
+      allow create, update: if isMedia() && signedIn() && request.auth.uid == uploader
+        && (request.auth.uid == elderId || activeWith(elderId, 'contributeLifebook'));
+      allow delete: if signedIn() && (request.auth.uid == elderId || request.auth.uid == uploader);
+    }
+
+    match /{everything=**} {
+      allow read, write: if false;
+    }
+  }
+}
