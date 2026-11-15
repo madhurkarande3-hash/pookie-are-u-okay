@@ -34,7 +34,7 @@ test("companion: never guesses about someone not in the LifeBook", async ({ page
   await page.getByLabel("Or type your message").fill("Who is my daughter?");
   await page.getByRole("button", { name: "Send" }).click();
   await expect(page.getByRole("log")).toContainText("won't guess");
-  await expect(page.getByRole("log")).toContainText("scripted, not AI");
+  await expect(page.getByRole("log")).toContainText("pre-written, not AI");
 });
 
 test("language switch keeps the theme and translates the app", async ({ page }) => {
@@ -49,14 +49,14 @@ test("language switch keeps the theme and translates the app", async ({ page }) 
 test("family member sees only what was granted, and pausing sharing hides everything", async ({ page }) => {
   await loadSample(page);
   await page.goto("/circle");
-  await page.getByRole("button", { name: "Demo: view as Ravi" }).click();
+  await page.getByRole("button", { name: "See the app as Ravi" }).click();
   await expect(page).toHaveURL(/\/family/);
   await expect(page.getByText("Medicines today")).toBeVisible();
   await expect(page.getByText("Shared check-ins")).toHaveCount(0);
   await page.getByRole("button", { name: "Back to elder view" }).click();
   await page.goto("/circle");
   await page.getByRole("switch", { name: /Pause all sharing/ }).click();
-  await page.getByRole("button", { name: "Demo: view as Ravi" }).click();
+  await page.getByRole("button", { name: "See the app as Ravi" }).click();
   await expect(page.getByText("Medicines today")).toHaveCount(0);
 });
 
@@ -67,7 +67,7 @@ test("help: only the elder asks, and the helper can reply", async ({ page }) => 
   await page.getByRole("button", { name: "Send to my Care Circle" }).click();
   await expect(page.getByText("Sent — waiting for a reply")).toBeVisible();
   await page.goto("/circle");
-  await page.getByRole("button", { name: "Demo: view as Priya" }).click();
+  await page.getByRole("button", { name: "See the app as Priya" }).click();
   await expect(page.getByText("Can someone call me?")).toBeVisible();
   await page.getByRole("button", { name: "I'm on it" }).click();
   await expect(page.getByText("Priya saw it and is on it")).toBeVisible();

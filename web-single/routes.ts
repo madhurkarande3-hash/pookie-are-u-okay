@@ -24,6 +24,7 @@ export const ROUTES = {
   "/admin": "care-team",
   "/health": "health",
   "/emergency": "emergency",
+  "/reminders": "reminders",
 } as const;
 
 export type RoutePath = keyof typeof ROUTES;

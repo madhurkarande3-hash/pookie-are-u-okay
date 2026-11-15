@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { Repository } from "@/lib/data/repository";
 import { minutesOf } from "@/lib/domain/dates";
 import { appliesOn } from "@/lib/domain/schedule";
+import { appendReminderLog } from "@/lib/reminderLog";
 import { defaultNotifyPrefs, localParts, reminderDecision, type NotifyPrefs, type ReminderKind } from "@shared/notifyPrefs";
 
 const FIRED_KEY = "pookie.reminders.fired";
@@ -62,6 +63,8 @@ export function useReminders(enabled: boolean, repo: Repository, elderId: string
         if (fired[item.id] !== today && reminderDecision(prefs, item.kind, item.minutes, now) === "send") {
           fired[item.id] = today;
           new Notification("Pookie", { body: item.body, tag: item.id });
+          const hhmm = `${String(Math.floor(item.minutes / 60)).padStart(2, "0")}:${String(item.minutes % 60).padStart(2, "0")}`;
+          appendReminderLog({ id: `${item.id}:${today}`, kind: item.kind, dateKey: today, time: hhmm, text: item.body, shownAt: new Date().toISOString() });
         }
       }
       window.sessionStorage.setItem(FIRED_KEY, JSON.stringify(fired));

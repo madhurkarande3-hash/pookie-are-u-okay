@@ -18,6 +18,7 @@ import { DEMO_MAX_MEDIA_BYTES } from "@/lib/domain/lifebook";
 import { buildSampleMedical, buildSample } from "./demoSample";
 import { can, type Action } from "@/lib/domain/permissions";
 import { sanitizeNotifyPrefs, type NotifyPrefs } from "@shared/notifyPrefs";
+import type { ReminderRecord } from "@/lib/reminderLog";
 import {
   shouldNotify,
   buildNotice,
@@ -515,6 +516,11 @@ export class DemoRepository implements Repository {
   async saveMedical(_elderId: string, profile: MedicalProfile): Promise<void> {
     const clean = sanitizeMedical(profile);
     this.mutate("medical:write", (db) => ({ ...db, medical: clean }));
+  }
+
+  async listReminderHistory(): Promise<ReminderRecord[]> {
+    // Without a server nothing is planned centrally; reminders shown on this device are kept by reminderLog.
+    return [];
   }
 
   async getNotifyPrefs(uid: string): Promise<NotifyPrefs | null> {

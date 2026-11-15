@@ -8,9 +8,15 @@ import { PREFS_STORAGE_KEY, THEMES, themeCss } from "@/lib/theme/tokens";
 import { PrefsProvider } from "@/state/PrefsProvider";
 import { SessionProvider } from "@/state/SessionProvider";
 
+const DESCRIPTION = "A gentle companion for older adults: friendly check-ins, medicine reminders, a Care Circle you control, and a LifeBook of your own memories.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://pookie-are-u-okay.vercel.app"),
   title: "Pookie — A little care, a lot of love",
-  description: "A gentle companion for older adults: friendly check-ins, medicine reminders, a Care Circle you control, and a LifeBook of your own memories.",
+  description: DESCRIPTION,
+  applicationName: "Pookie",
+  openGraph: { type: "website", siteName: "Pookie", title: "Pookie — A little care, a lot of love", description: DESCRIPTION },
+  twitter: { card: "summary", title: "Pookie — A little care, a lot of love", description: DESCRIPTION },
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: THEMES.sweet.bg };

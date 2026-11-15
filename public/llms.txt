@@ -1,0 +1,22 @@
+# Pookie
+
+> Pookie is a gentle web companion for older adults (including people living with memory loss) and the family and care teams who help them. English and Hindi. It is a companion, not a medical device: it does not diagnose, treat or change medicines. In an emergency, call the local emergency number (112 in India).
+
+## What it does
+- Daily check-ins (mood, sleep, energy, "I'd like some help"), always started by the elder.
+- Medicines with explicit answers: Taken, Missed, or "Not confirmed" — never guessed.
+- Doctor appointments with preparation notes, history, and "Add to my calendar" (.ics).
+- Reminder history: what Pookie reminded the person about.
+- LifeBook of approved memories; the AI companion only talks about approved facts and says when it doesn't know.
+- Care Circle: family members see only what the elder grants, and the elder can pause sharing at any time.
+- Health hub, emergency contacts, a simplified mode, and a care-team dashboard for clinics.
+
+## Privacy
+- Without Pookie's server, everything stays in the browser on the device.
+- With the server, data is stored per person with role-based access rules. See /privacy.
+
+## Pages
+- [Welcome](/): start, or explore with an invented sample person (Asha).
+- [Privacy](/privacy): what Pookie keeps and who sees it.
+
+Personal screens (/home, /medications, /appointments, /health and others) hold private data and are not meant to be crawled.

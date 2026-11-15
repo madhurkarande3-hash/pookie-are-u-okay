@@ -186,6 +186,9 @@ export default function SettingsPage() {
                   {t("settings.notifyEnable")}
                 </Button>
               ) : null}
+              <ButtonLink href="/reminders" variant="secondary" icon="clock">
+                {t("reminders.open")}
+              </ButtonLink>
             </Card>
             <Card className="space-y-3">
               <p className="font-extrabold">{t("circle.title")}</p>

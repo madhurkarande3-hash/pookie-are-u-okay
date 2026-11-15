@@ -16,6 +16,7 @@ import type {
 } from "@/lib/types";
 import type { CircleNotice } from "@shared/circleNotices";
 import type { NotifyPrefs } from "@shared/notifyPrefs";
+import type { ReminderRecord } from "@/lib/reminderLog";
 
 export interface InviteInput {
   name: string;
@@ -118,4 +119,7 @@ export interface Repository {
 
   getNotifyPrefs(uid: string): Promise<NotifyPrefs | null>;
   saveNotifyPrefs(uid: string, prefs: NotifyPrefs): Promise<void>;
+
+  /** Reminders planned and sent by Pookie's server, newest first (elder only). Empty without a server. */
+  listReminderHistory(elderId: string, max?: number): Promise<ReminderRecord[]>;
 }

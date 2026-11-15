@@ -15,7 +15,7 @@ Each master-prompt phase, with what is built and how it was verified.
 | 5 AI companion | Implemented (Demo verified) | Text + browser voice, Listening/Thinking/Speaking, interrupt, pause, end; Gemini replies server-side with server-loaded facts; Cloud TTS persona voices; Gemini Live preview with single-use tokens and one reconnect; consent before notes; Demo honesty (e2e) | Live run with a Gemini key and the current Live model name |
 | 6 LifeBook | Done | 8 sections; photos (EXIF stripped) and voice memories; dates, relationships, links to people; search; family suggestions + approval; correction history; conflict detection told to the AI as uncertain; per-memory sharing; audit; e2e + unit | Storage rules on a live bucket |
 | 7 Medicines | Done | Frequency, start/end dates, instructions, times; Taken / Missed (explicit) / Not confirmed; history by day; permission-gated; never suggests dose changes; unit + e2e | — |
-| 8 Appointments | Done | Add/edit/delete; prep; scheduled/completed/cancelled + history; per-visit visibility; reminders 1 h before | Calendar sync (not built) |
+| 8 Appointments | Done | Add/edit/delete; prep; scheduled/completed/cancelled + history; per-visit visibility; reminders 1 h before; "Add to my calendar" (.ics, unit-tested) | Two-way Google Calendar sync |
 | 9 Check-ins | Done | Mood, sleep, energy, help needed; spoken note; history; optional sharing; follow-up check-in; "I'd like some help" (elder-initiated only); missed slot = "no response" | — |
 | 10 Care Circle | Done | Invite, accept/decline, multiple members, 9 permissions, pause/resume/remove, pause-all, proposals accepted/modified/declined/paused, help requests, contact the elder; rules + e2e | Live run of the invitation email |
 | 11 Reminders & notifications | Implemented | Server sweep: timezone, quiet hours (deferred delivery), kinds, deterministic ids (no duplicates), FCM + email, retries 5/15/45, honest `sent` vs `deliveredAt`; generic lock-screen text; planner unit-tested | Live FCM/Scheduler run |
@@ -39,7 +39,6 @@ Each master-prompt phase, with what is built and how it was verified.
 
 ## Remaining (not built)
 
-- Google Calendar sync for appointments
+- Two-way Google Calendar sync (needs Google OAuth). One-way "Add to my calendar" (.ics) is built.
 - Guardian consent for people who cannot consent for themselves (needs legal design)
-- An in-app reminder history screen (the data exists in `notifications`)
 - Native mobile apps (the web app is responsive and installable)

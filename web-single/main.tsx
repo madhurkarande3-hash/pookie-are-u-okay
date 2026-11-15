@@ -32,6 +32,7 @@ import RememberPage from "@/app/(app)/remember/page";
 import AdminPage from "@/app/admin/page";
 import HealthPage from "@/app/(app)/health/page";
 import EmergencyPage from "@/app/(app)/emergency/page";
+import RemindersPage from "@/app/(app)/reminders/page";
 import { usePathname } from "./shims/next-navigation";
 import type { RoutePath } from "./routes";
 
@@ -57,6 +58,7 @@ const PAGES: Record<RoutePath, [ComponentType, Layout | null]> = {
   "/admin": [AdminPage, null],
   "/health": [HealthPage, AppLayout],
   "/emergency": [EmergencyPage, AppLayout],
+  "/reminders": [RemindersPage, AppLayout],
 };
 
 function Router() {

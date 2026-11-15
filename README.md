@@ -151,7 +151,7 @@ firestore.rules · storage.rules · firestore.indexes.json · firebase.json · a
 - **Gemini Live is a preview.** It depends on the live model name in `LIVE_MODEL` and the browser's audio support. If it can't connect, the app falls back to the standard voice mode.
 - **Voice in Demo Mode** uses the device's built-in voices, so Kaka may sound like a pitched-down female voice on phones that have only one Hindi voice. The real-server mode uses Cloud TTS voices.
 - **Push needs extra setup.** Web push needs a VAPID key and a supported browser. On iPhone it needs iOS 16.4+ with Pookie added to the Home Screen.
-- **Google Calendar sync** for appointments is not built.
+- **Two-way Google Calendar sync** is not built. Each upcoming visit has "Add to my calendar", which downloads an .ics file for Google, Apple or Outlook calendars.
 - **No formal clinical or legal review.** Pookie is a companion, not a medical device. The DPDP review in docs/SECURITY.md is a self-assessment, not a compliance claim.
 
 Pookie does not diagnose or treat any condition, including Alzheimer's. In an emergency, call your local emergency number (112 in India).

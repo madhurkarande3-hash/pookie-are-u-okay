@@ -9,6 +9,7 @@ import { TextArea, TextField } from "@/components/ui/Field";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { usePolicy } from "@/hooks/usePolicy";
 import { formatDate, formatTime, newId, toDateKey } from "@/lib/domain/dates";
+import { appointmentToIcs, icsFileName } from "@/lib/domain/ics";
 import type { Appointment, AppointmentStatus } from "@/lib/types";
 import { usePrefs } from "@/state/PrefsProvider";
 import { useReadySession } from "@/state/SessionProvider";
@@ -91,6 +92,15 @@ export default function AppointmentsPage() {
       setActionError(e);
     }
   };
+  const addToCalendar = (a: Appointment) => {
+    const ics = appointmentToIcs(a, { title: t("appt.calendarTitle", { doctor: a.doctor }), prepLabel: t("appt.prep"), alarm: t("appt.calendarAlarm") });
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = icsFileName(a);
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
   const remove = (id: string) => act(() => repo.deleteAppointment(elderId, id));
   const setStatus = (a: Appointment, status: AppointmentStatus) => act(() => repo.saveAppointment(elderId, { ...a, status }));
   const STATUS_VIEW = {
@@ -121,6 +131,11 @@ export default function AppointmentsPage() {
       <p className="text-sm text-ink-soft">
         {a.remind ? t("appt.remindOn") : t("appt.remindOff")} · {a.shareWithCircle === false ? t("appt.private") : t("appt.shared")}
       </p>
+      {isOpen(a) ? (
+        <Button variant="secondary" icon="calendar" onClick={() => addToCalendar(a)}>
+          {t("appt.addToCalendar")}
+        </Button>
+      ) : null}
       {canWrite ? (
         <div className="flex flex-wrap gap-2">
           {(a.status ?? "scheduled") === "scheduled" ? (

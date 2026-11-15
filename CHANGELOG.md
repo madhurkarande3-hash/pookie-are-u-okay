@@ -1,5 +1,14 @@
 # Changelog
 
+## Reminder history, calendar files and plainer wording
+
+- Reminder history (`/reminders`, linked from Settings): reminders this device showed, plus the server's
+  `notifications` records when Pookie runs with its server (`Repository.listReminderHistory`, `src/lib/reminderLog.ts`).
+- "Add to my calendar" on upcoming appointments: an RFC 5545 `.ics` file with a 1-hour alarm (`src/lib/domain/ics.ts`).
+- Wording: the "Demo Mode" label is gone from the app. Notices still say plainly that data stays on the device,
+  that replies are pre-written rather than AI, that no email is sent, and that the sample care-team login is not real security.
+- `robots.txt` (private screens not crawled), `sitemap.xml`, web app manifest, Open Graph metadata and `/llms.txt`.
+
 ## Alzheimer's care pack, health hub and multi-provider AI
 
 - Simple Mode (`/simple`), reminiscence (`/remember`), "Where am I?", family voice reminders on medicines,

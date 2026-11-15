@@ -33,6 +33,7 @@ import type {
 import { getFirebase } from "@/lib/firebase/client";
 import type { CircleNotice } from "@shared/circleNotices";
 import { sanitizeNotifyPrefs, type NotifyPrefs } from "@shared/notifyPrefs";
+import type { ReminderRecord } from "@/lib/reminderLog";
 import type { ExportBundle, InviteInput, Repository } from "./repository";
 import {
   sanitizeAppointment,
@@ -478,6 +479,25 @@ export class FirebaseRepository implements Repository {
       doc(this.db, "elders", elderId, "private", "medical"),
       sanitizeMedical(profile),
     );
+  }
+
+  async listReminderHistory(elderId: string, max = 60): Promise<ReminderRecord[]> {
+    if (!this.isElder) return [];
+    const snap = await getDocs(query(collection(this.db, "elders", elderId, "notifications"), orderBy("createdAt", "desc"), limit(max)));
+    const iso = (v: unknown): string | undefined => (v && typeof (v as { toDate?: unknown }).toDate === "function" ? (v as { toDate: () => Date }).toDate().toISOString() : undefined);
+    return snap.docs.map((d) => {
+      const r = d.data();
+      return {
+        id: d.id,
+        kind: r.kind,
+        dateKey: String(r.dateKey ?? ""),
+        time: String(r.time ?? ""),
+        refId: typeof r.refId === "string" ? r.refId : undefined,
+        status: typeof r.status === "string" ? r.status : undefined,
+        shownAt: iso(r.deliveredAt),
+        source: "server" as const,
+      };
+    });
   }
 
   async getNotifyPrefs(uid: string): Promise<NotifyPrefs | null> {
