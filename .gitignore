@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.env
+.env.local
+.env.*.local
+.firebase
+.firebaserc
+*.log
+functions/lib
+functions/node_modules
+tsconfig.tsbuildinfo
+next-env.d.ts
+web-single/dist
+test-results
+playwright-report
