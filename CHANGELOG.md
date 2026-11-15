@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased — production-mode safety net
+Firebase configuration is now required for the normal app experience. Browser-only fictional fixtures require an explicit development flag and are disabled in production builds. A failed Gemini callable now shows an unavailable state instead of returning a scripted reply. TypeScript is pinned to 5.6.3 for reproducible checks.
+
 ## M1 — Deploy and safety net
 Fictional sample data (one tap) and a seed script for demo accounts; Playwright end-to-end and axe accessibility suite (22 checks); GitHub Actions CI (typecheck, lint, unit, rules emulator, e2e, builds); Firebase App Hosting config; documented environment variables.
 

@@ -133,7 +133,7 @@ export default function CompanionPage() {
   const [ended, setEnded] = useState(false);
   const [live, setLive] = useState(false);
   const [liveExchanges, setLiveExchanges] = useState<number | null>(null);
-  const [fellBack, setFellBack] = useState(false);
+  const [serviceError, setServiceError] = useState(false);
   const [draft, setDraft] = useState("");
   const [slot, setSlot] = useState<string | null>(null);
   const requestRef = useRef(0);
@@ -188,20 +188,29 @@ export default function CompanionPage() {
       const history = [...messages, userMessage];
       setMessages(history);
       setThinking(true);
+      setServiceError(false);
       const requestId = (requestRef.current += 1);
       const turns: ChatTurn[] = history.filter((m) => m.source !== "app").map((m) => ({ role: m.role === "user" ? "user" : "model", text: m.text }));
-      const reply = await requestCompanionReply({
-        mode: repo.mode,
-        turns,
-        language: prefs.language,
-        facts: selectFacts({ aiPersonalization: personalised, entries: lifebook.data ?? [] }),
-        preferredName: personalised ? (elder?.preferredName ?? "") : "",
-        persona,
-      });
+      let reply: CompanionReply;
+      try {
+        reply = await requestCompanionReply({
+          mode: repo.mode,
+          turns,
+          language: prefs.language,
+          facts: selectFacts({ aiPersonalization: personalised, entries: lifebook.data ?? [] }),
+          preferredName: personalised ? (elder?.preferredName ?? "") : "",
+          persona,
+        });
+      } catch {
+        if (requestRef.current === requestId) {
+          setThinking(false);
+          setServiceError(true);
+        }
+        return;
+      }
       // Ignore replies that arrive after the user paused, ended or sent again.
       if (requestRef.current !== requestId) return;
       setThinking(false);
-      setFellBack(reply.fellBack);
       setMessages((current) => [...current, { id: newId(), role: "pookie", text: reply.text, source: reply.source }]);
       if (prefs.voiceOutput) speak(reply.text, afterSpeaking);
       else afterSpeaking();
@@ -257,7 +266,7 @@ export default function CompanionPage() {
     setLive(false);
     setLiveExchanges(null);
     setPaused(false);
-    setFellBack(false);
+    setServiceError(false);
   };
   const submitText = (e: FormEvent) => {
     e.preventDefault();
@@ -270,8 +279,8 @@ export default function CompanionPage() {
     <>
       <PageHeader title={t("talk.title")} subtitle={t("talk.subtitle")} />
 
-      <Notice tone={repo.mode === "demo" || fellBack ? "warn" : "neutral"}>
-        <p className="font-bold">{repo.mode === "demo" ? t("talk.modeDemo") : fellBack ? t("talk.modeFallback") : t("talk.modeGemini")}</p>
+      <Notice tone={repo.mode === "demo" ? "warn" : "neutral"}>
+        <p className="font-bold">{repo.mode === "demo" ? t("talk.modeDemo") : t("talk.modeGemini")}</p>
         <p className="text-sm">{repo.mode === "firebase" ? t("talk.voiceEngineServer") : t("talk.voiceEngine")}</p>
       </Notice>
       {personalised ? null : (
@@ -279,6 +288,12 @@ export default function CompanionPage() {
           <p>{t("talk.personalOff")}</p>
         </Notice>
       )}
+      {serviceError ? (
+        <Notice tone="warn">
+          <p className="font-bold">{t("talk.modeUnavailable")}</p>
+          <p className="text-sm">{t("error.offline")}</p>
+        </Notice>
+      ) : null}
 
       {ended ? (
         <SummaryStep exchanges={exchanges} slot={slot} onRestart={restart} />

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Actor, CircleMember, ElderProfile } from "@/lib/types";
 import type { Repository } from "@/lib/data/repository";
 import { DEMO_ELDER_ID, DemoRepository } from "@/lib/data/demoRepository";
-import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { applicationMode, type ApplicationMode } from "@/lib/firebase/config";
 import type { AuthUser } from "@/lib/firebase/auth";
 
 const DEMO_PERSONA_KEY = "pookie.demo.persona";
@@ -17,7 +17,7 @@ export type Session =
   | { status: "ready"; actor: Actor; elderId: string };
 
 interface SessionContextValue {
-  mode: "demo" | "firebase";
+  mode: ApplicationMode;
   session: Session;
   repo: Repository | null;
   /** The elder this session is about (null until onboarding creates it, or when access is paused). */
@@ -45,7 +45,7 @@ function memberActor(member: CircleMember): Actor {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const mode = isFirebaseConfigured ? "firebase" : "demo";
+  const mode = applicationMode;
   const [session, setSession] = useState<Session>({ status: "loading" });
   const [repo, setRepo] = useState<Repository | null>(null);
   const [elder, setElder] = useState<ElderProfile | null>(null);
@@ -133,6 +133,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const persona = stored !== "elder" && demoRepo.peekMember(stored)?.status === "active" ? stored : "elder";
       setPersonaId(persona);
       resolveDemo(persona);
+      return undefined;
+    }
+    if (mode === "unconfigured") {
+      setSession({ status: "signedOut" });
+      setElder(null);
+      setElderLoaded(true);
       return undefined;
     }
     let unsubscribe: (() => void) | undefined;

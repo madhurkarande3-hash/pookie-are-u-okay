@@ -20,5 +20,22 @@ export const APP_CHECK_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_S
 export const FUNCTIONS_REGION = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_REGION || "asia-south1";
 export const USE_EMULATORS = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true";
 
-/** Without a complete config the app runs in Demo Mode. */
+/** A production build needs these public Firebase identifiers before it can start. */
 export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
+
+/**
+ * Demo fixtures are deliberately opt-in. They are useful for local development
+ * and a synthetic judging walk-through, but must never become a silent
+ * replacement for authentication, persistence, email, notifications or Gemini.
+ */
+export const isDemoModeEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO_MODE === "true" && process.env.NODE_ENV !== "production";
+
+export type ApplicationMode = "firebase" | "demo" | "unconfigured";
+
+export function resolveApplicationMode(firebaseConfigured: boolean, demoEnabled: boolean): ApplicationMode {
+  if (firebaseConfigured) return "firebase";
+  if (demoEnabled) return "demo";
+  return "unconfigured";
+}
+
+export const applicationMode = resolveApplicationMode(isFirebaseConfigured, isDemoModeEnabled);

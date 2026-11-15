@@ -41,7 +41,7 @@ function toBase64Pcm16(samples: Float32Array): string {
   return btoa(binary);
 }
 
-function fromBase64Pcm16(data: string): Float32Array<ArrayBuffer> {
+function fromBase64Pcm16(data: string): Float32Array {
   const binary = atob(data);
   const out = new Float32Array(new ArrayBuffer((binary.length / 2) * 4));
   for (let i = 0; i < out.length; i += 1) {

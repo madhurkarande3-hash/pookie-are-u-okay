@@ -19,14 +19,24 @@ Built with Next.js 14, React 18, strict TypeScript and Tailwind CSS. The backend
 
 ---
 
-## Try it in one minute (Demo Mode, no keys)
+## Run locally
 
 ```bash
 npm install
 npm run dev            # http://localhost:3000
 ```
 
-On the welcome screen, choose **Explore with sample data** to load Asha, a fictional elder, with her Care Circle. Or tap **Get started** to set up from scratch.
+Pookie starts in its real, authenticated mode when the required Firebase values are present. Without them, it shows a clear setup state; it does not silently replace accounts, data or AI with fixtures.
+
+### Local development fixtures
+
+For an explicitly local, fictional walkthrough, add this to `.env.local` before starting the app:
+
+```bash
+NEXT_PUBLIC_ENABLE_DEMO_MODE=true
+```
+
+This flag is ignored in production builds. On the welcome screen, choose **Explore with sample data** to load Asha, a fictional elder, with her Care Circle.
 
 Demo Mode is honest about what it is:
 - a banner on every screen says Demo Mode
@@ -42,7 +52,7 @@ The Care Circle screen has **Demo: view as …** buttons, so you can see exactly
 
 1. **Create a Firebase project on the Blaze plan.** Enable Authentication (Email/Password, Google), Firestore, Storage and App Hosting. Enabling Cloud Functions also enables Cloud Scheduler. Then enable the **Cloud Text-to-Speech API** in Google Cloud.
 2. **Web config:** `cp .env.example .env.local` and fill in the `NEXT_PUBLIC_FIREBASE_*` values. These are public by design; access is enforced by `firestore.rules` and `storage.rules`.
-3. **Project:** `cp .firebaserc.example .firebaserc` and set your project id.
+3. **Project:** `cp .firebaserc.example .firebaserc` and set your project id. Without the Firebase values, the app intentionally stays in a configuration-required state.
 4. **Secrets (server only):**
    ```bash
    npx firebase functions:secrets:set GEMINI_API_KEY
@@ -86,7 +96,7 @@ gcloud firestore import gs://<BACKUP_BUCKET>/<YYYY-MM-DD>
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run build:single` | One self-contained HTML file of the Demo app |
 | `npm run typecheck` / `lint` | Strict TypeScript (`noUncheckedIndexedAccess`) / ESLint |
-| `npm test` | 109 unit tests (Vitest) |
+| `npm test` | 115 unit tests (Vitest) |
 | `npm run test:rules` | Firestore security-rules tests on the emulator (Java 11+) |
 | `npm run test:e2e` | 22 Playwright end-to-end and axe accessibility checks (phone + desktop) |
 | `npm run test:all` | Typecheck, unit tests and rules tests |
@@ -128,7 +138,7 @@ firestore.rules · storage.rules · firestore.indexes.json · firebase.json · a
 
 ## Known limitations
 
-- **Not yet run against live services.** Gemini, Gemini Live, Cloud TTS, FCM, Scheduler and email are implemented and type-checked against the real SDKs, but they have not been run against real credentials. The build environment has no project. Run `npm run test:rules` and the smoke checks in [docs/DEMO.md](docs/DEMO.md) after the first deploy.
+- **Not yet run against live services.** Gemini, Gemini Live, Cloud TTS, FCM, Scheduler and email are implemented and type-checked against the real SDKs, but they have not been run against real credentials. The build environment has no project. If Gemini is unavailable in real mode, Pookie shows that state and does not generate a scripted replacement. Run `npm run test:rules` and the smoke checks in [docs/DEMO.md](docs/DEMO.md) after the first deploy.
 - **Gemini Live is a preview.** It depends on the live model name in `LIVE_MODEL` and the browser's audio support. If it can't connect, the app falls back to the standard voice mode.
 - **Voice in Demo Mode** uses the device's built-in voices, so Kaka may sound like a pitched-down female voice on phones that have only one Hindi voice. The real-server mode uses Cloud TTS voices.
 - **Push needs extra setup.** Web push needs a VAPID key and a supported browser. On iPhone it needs iOS 16.4+ with Pookie added to the Home Screen.

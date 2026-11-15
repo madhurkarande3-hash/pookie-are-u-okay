@@ -50,6 +50,13 @@ export default function WelcomePage() {
           ))}
         </ul>
 
+        {mode === "unconfigured" ? (
+          <Notice tone="warn">
+            <p className="text-left font-bold">{t("welcome.unconfiguredTitle")}</p>
+            <p className="text-left">{t("welcome.unconfiguredBody")}</p>
+          </Notice>
+        ) : null}
+
         {mode === "demo" ? (
           <Notice tone="warn">
             <p className="text-left font-bold">{t("welcome.demoTitle")}</p>
@@ -58,7 +65,7 @@ export default function WelcomePage() {
         ) : null}
 
         {session.status === "loading" || (session.status === "ready" && !elderLoaded) ? <Loading /> : null}
-        {session.status === "signedOut" ? <SignInForm /> : null}
+        {session.status === "signedOut" && mode === "firebase" ? <SignInForm /> : null}
         {session.status === "needsSetup" ? <AccountSetup user={session.user} onElderChosen={() => router.push("/onboarding/pookie")} onJoined={() => router.push("/family")} /> : null}
         {ready ? (
           <ButtonLink href={nextHref} size="lg" icon="arrow">
