@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { loadSample } from "./helpers";
 
-const PAGES = ["/home", "/companion", "/checkin", "/medications", "/appointments", "/lifebook", "/circle", "/settings", "/privacy"];
+const PAGES = ["/home", "/companion", "/checkin", "/medications", "/appointments", "/lifebook", "/circle", "/settings", "/privacy", "/simple", "/remember", "/health", "/emergency", "/admin"];
 
 for (const theme of ["sweet", "cool"] as const) {
   test(`no serious accessibility problems (${theme} theme)`, async ({ page }) => {

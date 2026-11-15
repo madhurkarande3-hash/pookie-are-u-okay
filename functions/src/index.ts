@@ -297,3 +297,21 @@ export const liveToken = onCall<{ language?: unknown }, Promise<{ token: string;
     }
   },
 );
+
+/**
+ * Care-team dashboard: the elders this signed-in clinician is an *active*
+ * Care Circle member of. Requires the `careTeam` custom claim (granted by
+ * an admin with scripts/grant-care-team.mjs). Returns ids only; every record
+ * is then read by the client under the normal per-patient security rules,
+ * so a care team never sees more than each patient allowed.
+ */
+export const careTeamPatients = onCall({ region: "asia-south1", maxInstances: 5 }, async (request) => {
+  const auth = request.auth;
+  if (!auth) throw new HttpsError("unauthenticated", "Sign in first.");
+  if (auth.token.careTeam !== true) throw new HttpsError("permission-denied", "This account is not on a care team.");
+  const email = typeof auth.token.email === "string" ? auth.token.email.toLowerCase() : "";
+  if (!email || auth.token.email_verified !== true) throw new HttpsError("failed-precondition", "Verify your email first.");
+  const snap = await getFirestore().collectionGroup("members").where("email", "==", email).where("status", "==", "active").limit(200).get();
+  const elderIds = snap.docs.filter((d) => d.id === auth.uid).map((d) => d.ref.parent.parent?.id).filter((id): id is string => Boolean(id));
+  return { elderIds };
+});

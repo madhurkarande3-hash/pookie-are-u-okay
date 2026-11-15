@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { LiveState, LiveVoice } from "@/lib/ai/liveSession";
+import type { LiveContext, LiveState, LiveVoice } from "@/lib/ai/liveSession";
 import type { MessageKey } from "@/lib/i18n";
 import type { Companion } from "@/lib/types";
 import { usePrefs } from "@/state/PrefsProvider";
@@ -26,7 +26,17 @@ const VIEW: Record<LiveState, { icon: IconName; label: MessageKey }> = {
 };
 
 /** Real-time voice conversation with Gemini Live (preview). Ends with the usual note-and-consent step. */
-export function LiveVoicePanel({ companion, onEnded, onFallback }: { companion: Companion; onEnded: (exchanges: number) => void; onFallback: () => void }) {
+export function LiveVoicePanel({
+  companion,
+  context,
+  onEnded,
+  onFallback,
+}: {
+  companion: Companion;
+  context: LiveContext;
+  onEnded: (exchanges: number) => void;
+  onFallback: () => void;
+}) {
   const { t, prefs } = usePrefs();
   const [state, setState] = useState<LiveState>("connecting");
   const [lines, setLines] = useState<Line[]>([]);
@@ -37,17 +47,25 @@ export function LiveVoicePanel({ companion, onEnded, onFallback }: { companion: 
     let disposed = false;
     void import("@/lib/ai/liveSession").then(async ({ LiveVoice }) => {
       if (disposed) return;
-      const voice = new LiveVoice(prefs.language, {
-        onState: setState,
-        onTranscript: (who, text) =>
-          setLines((current) => {
-            const last = current.at(-1);
-            if (last && last.who === who) return [...current.slice(0, -1), { who, text: last.text + text }];
-            if (who === "user") turnsRef.current += 1;
-            return [...current, { who, text }];
-          }),
-        onTurnEnd: () => undefined,
-      });
+      const voice = new LiveVoice(
+        prefs.language,
+        {
+          onState: setState,
+          onTranscript: (who, text) =>
+            setLines((current) => {
+              const last = current.at(-1);
+              if (last && last.who === who)
+                return [
+                  ...current.slice(0, -1),
+                  { who, text: last.text + text },
+                ];
+              if (who === "user") turnsRef.current += 1;
+              return [...current, { who, text }];
+            }),
+          onTurnEnd: () => undefined,
+        },
+        context,
+      );
       voiceRef.current = voice;
       try {
         await voice.start();
@@ -59,6 +77,8 @@ export function LiveVoicePanel({ companion, onEnded, onFallback }: { companion: 
       disposed = true;
       voiceRef.current?.end();
     };
+    // The context is fixed for the length of one conversation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefs.language]);
 
   const view = VIEW[state];
@@ -70,7 +90,11 @@ export function LiveVoicePanel({ companion, onEnded, onFallback }: { companion: 
           <p className="font-bold text-ink-soft">
             {t(`persona.${companion}.name`)} · {t("live.badge")}
           </p>
-          <p role="status" aria-live="polite" className="flex items-center gap-2 text-xl font-extrabold text-primary-strong">
+          <p
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 text-xl font-extrabold text-primary-strong"
+          >
             <Icon name={view.icon} className="h-7 w-7" />
             {t(view.label)}
           </p>
@@ -78,11 +102,28 @@ export function LiveVoicePanel({ companion, onEnded, onFallback }: { companion: 
       </div>
 
       {lines.length > 0 ? (
-        <ol role="log" aria-label={t("talk.transcript")} aria-live="polite" className="max-h-[22rem] space-y-3 overflow-y-auto rounded-card border border-line bg-surface p-4" tabIndex={0}>
+        <ol
+          role="log"
+          aria-label={t("talk.transcript")}
+          aria-live="polite"
+          className="max-h-[22rem] space-y-3 overflow-y-auto rounded-card border border-line bg-surface p-4"
+          tabIndex={0}
+        >
           {lines.map((line, i) => (
-            <li key={i} className={`flex flex-col ${line.who === "user" ? "items-end" : "items-start"}`}>
-              <span className="text-sm font-bold text-ink-soft">{line.who === "user" ? t("talk.you") : `${t(`persona.${companion}.name`)} · ${t("talk.tagGemini")}`}</span>
-              <p className={`max-w-[85%] rounded-3xl px-4 py-2.5 text-lg ${line.who === "user" ? "bg-primary-strong text-white" : "border border-line bg-bg"}`}>{line.text}</p>
+            <li
+              key={i}
+              className={`flex flex-col ${line.who === "user" ? "items-end" : "items-start"}`}
+            >
+              <span className="text-sm font-bold text-ink-soft">
+                {line.who === "user"
+                  ? t("talk.you")
+                  : `${t(`persona.${companion}.name`)} · ${t("talk.tagGemini")}`}
+              </span>
+              <p
+                className={`max-w-[85%] rounded-3xl px-4 py-2.5 text-lg ${line.who === "user" ? "bg-primary-strong text-white" : "border border-line bg-bg"}`}
+              >
+                {line.text}
+              </p>
             </li>
           ))}
         </ol>
@@ -97,10 +138,21 @@ export function LiveVoicePanel({ companion, onEnded, onFallback }: { companion: 
         </Notice>
       ) : (
         <div className="grid gap-2 sm:grid-cols-3">
-          <Button variant="secondary" size="lg" icon="stop" disabled={state !== "speaking"} onClick={() => voiceRef.current?.stopPlayback()}>
+          <Button
+            variant="secondary"
+            size="lg"
+            icon="stop"
+            disabled={state !== "speaking"}
+            onClick={() => voiceRef.current?.stopPlayback()}
+          >
             {t("talk.interrupt")}
           </Button>
-          <Button variant="secondary" size="lg" icon={state === "paused" ? "play" : "pause"} onClick={() => voiceRef.current?.setPaused(state !== "paused")}>
+          <Button
+            variant="secondary"
+            size="lg"
+            icon={state === "paused" ? "play" : "pause"}
+            onClick={() => voiceRef.current?.setPaused(state !== "paused")}
+          >
             {state === "paused" ? t("talk.resume") : t("talk.pause")}
           </Button>
           <Button

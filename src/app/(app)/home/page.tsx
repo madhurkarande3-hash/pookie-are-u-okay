@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { DoseBadge } from "@/components/DoseStatus";
 import { HelpRequestCard } from "@/components/HelpRequest";
 import { OrientationCard } from "@/components/OrientationCard";
+import { WhereAmI } from "@/components/WhereAmI";
 import { PookieAvatar } from "@/components/PookieAvatar";
 import { ButtonLink } from "@/components/ui/Button";
 import { Card, Section } from "@/components/ui/Card";
@@ -53,7 +54,8 @@ export default function HomePage() {
 
   useEffect(() => {
     if (actor.role !== "elder") router.replace("/family");
-  }, [actor.role, router]);
+    else if (prefs.simpleMode) router.replace("/simple");
+  }, [actor.role, router, prefs.simpleMode]);
 
   const data = useAsyncData(async () => {
     const [medications, logs, schedules, checkins, summaries, appointments, lifebook, circle] = await Promise.all([
@@ -112,6 +114,7 @@ export default function HomePage() {
       ) : null}
 
       {d ? <OrientationCard now={now} entries={d.lifebook} /> : null}
+      <WhereAmI />
 
       {d ? (
         <div className="grid gap-6 lg:grid-cols-2 lg:items-start">

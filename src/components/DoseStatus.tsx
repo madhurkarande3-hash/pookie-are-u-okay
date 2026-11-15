@@ -6,7 +6,14 @@ import { usePrefs } from "@/state/PrefsProvider";
 import { StatusBadge } from "./ui/Feedback";
 import type { IconName } from "./ui/Icon";
 
-export const DOSE_VIEW: Record<DoseState, { tone: "ok" | "warn" | "danger" | "neutral"; icon: IconName; label: MessageKey }> = {
+export const DOSE_VIEW: Record<
+  DoseState,
+  {
+    tone: "ok" | "warn" | "danger" | "neutral";
+    icon: IconName;
+    label: MessageKey;
+  }
+> = {
   taken: { tone: "ok", icon: "check", label: "dose.taken" },
   missed: { tone: "danger", icon: "cross", label: "dose.missed" },
   unconfirmed: { tone: "warn", icon: "question", label: "dose.unconfirmed" },

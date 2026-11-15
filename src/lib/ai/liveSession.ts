@@ -8,7 +8,17 @@
  * The token comes from the `liveToken` Cloud Function, which locks the model,
  * voice and safety instructions; the API key never reaches the browser.
  */
-import type { CompanionLanguage } from "@shared/companionContext";
+import type { CompanionEntry, CompanionLanguage } from "@shared/companionContext";
+import type { CompanionPersona } from "@shared/persona";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { deviceTimeZone } from "./serverAi";
+
+/** What the token server needs in browser-stored mode (with Firebase, the server reads it itself). */
+export interface LiveContext {
+  persona: CompanionPersona;
+  preferredName: string;
+  entries: readonly CompanionEntry[];
+}
 
 export type LiveState = "connecting" | "listening" | "thinking" | "speaking" | "paused" | "closed" | "error";
 
@@ -53,7 +63,16 @@ function fromBase64Pcm16(data: string): Float32Array<ArrayBuffer> {
   return out;
 }
 
-async function fetchToken(language: CompanionLanguage): Promise<{ token: string; model: string }> {
+async function fetchToken(language: CompanionLanguage, context: LiveContext): Promise<{ token: string; model: string }> {
+  if (!isFirebaseConfigured) {
+    const res = await fetch("/api/live-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language, persona: context.persona, preferredName: context.preferredName, entries: context.entries, timeZone: deviceTimeZone() }),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    return (await res.json()) as { token: string; model: string };
+  }
   const [{ httpsCallable }, { getFirebase }] = await Promise.all([import("firebase/functions"), import("@/lib/firebase/client")]);
   const call = httpsCallable<{ language: CompanionLanguage }, { token: string; model: string }>(getFirebase().functions, "liveToken");
   return (await call({ language })).data;
@@ -73,6 +92,7 @@ export class LiveVoice {
   constructor(
     private readonly language: CompanionLanguage,
     private readonly cb: LiveCallbacks,
+    private readonly context: LiveContext,
   ) {}
 
   async start(): Promise<void> {
@@ -84,7 +104,7 @@ export class LiveVoice {
   }
 
   private async connect(): Promise<void> {
-    const { token, model } = await fetchToken(this.language);
+    const { token, model } = await fetchToken(this.language, this.context);
     const { GoogleGenAI } = await import("@google/genai");
     const ai = new GoogleGenAI({ apiKey: token, httpOptions: { apiVersion: "v1alpha" } });
     this.session = await ai.live.connect({

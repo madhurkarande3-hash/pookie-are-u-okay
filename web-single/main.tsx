@@ -27,6 +27,11 @@ import FamilyPage from "@/app/(app)/family/page";
 import CareCirclePage from "@/app/(app)/circle/page";
 import SettingsPage from "@/app/(app)/settings/page";
 import PrivacyPage from "@/app/privacy/page";
+import SimplePage from "@/app/(app)/simple/page";
+import RememberPage from "@/app/(app)/remember/page";
+import AdminPage from "@/app/admin/page";
+import HealthPage from "@/app/(app)/health/page";
+import EmergencyPage from "@/app/(app)/emergency/page";
 import { usePathname } from "./shims/next-navigation";
 import type { RoutePath } from "./routes";
 
@@ -47,6 +52,11 @@ const PAGES: Record<RoutePath, [ComponentType, Layout | null]> = {
   "/circle": [CareCirclePage, AppLayout],
   "/settings": [SettingsPage, AppLayout],
   "/privacy": [PrivacyPage, null],
+  "/simple": [SimplePage, AppLayout],
+  "/remember": [RememberPage, AppLayout],
+  "/admin": [AdminPage, null],
+  "/health": [HealthPage, AppLayout],
+  "/emergency": [EmergencyPage, AppLayout],
 };
 
 function Router() {

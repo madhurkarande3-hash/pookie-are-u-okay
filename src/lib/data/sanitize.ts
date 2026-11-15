@@ -1,6 +1,21 @@
-import type { Appointment, CareSchedule, CareSummary, Checkin, HelpRequest, LifebookEntry, Medication } from "@/lib/types";
+import type {
+  MedicalProfile,
+  Appointment,
+  CareSchedule,
+  CareSummary,
+  Checkin,
+  HelpRequest,
+  LifebookEntry,
+  Medication,
+} from "@/lib/types";
 import { ValidationError } from "@/lib/types";
-import { LIMITS, assertDate, assertTime, cleanText, cleanTimes } from "@/lib/domain/validation";
+import {
+  LIMITS,
+  assertDate,
+  assertTime,
+  cleanText,
+  cleanTimes,
+} from "@/lib/domain/validation";
 import type { InviteInput } from "./repository";
 import { cleanEmail } from "@/lib/domain/validation";
 import { toDateKey } from "@/lib/domain/dates";
@@ -9,21 +24,31 @@ const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Validates and normalises every record before it is written, in both repositories. */
 
-function cleanFrequency(f: Medication["frequency"]): NonNullable<Medication["frequency"]> {
+function cleanFrequency(
+  f: Medication["frequency"],
+): NonNullable<Medication["frequency"]> {
   if (!f || f.kind === "daily") return { kind: "daily" };
   if (f.kind === "weekdays") {
-    const days = [...new Set(f.days)].filter((d) => Number.isInteger(d) && d >= 0 && d <= 6).sort();
+    const days = [...new Set(f.days)]
+      .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+      .sort();
     if (days.length === 0) throw new ValidationError("frequency", "required");
     return { kind: "weekdays", days };
   }
-  if (!Number.isInteger(f.everyDays) || f.everyDays < 2 || f.everyDays > 60) throw new ValidationError("frequency", "badNumber");
+  if (!Number.isInteger(f.everyDays) || f.everyDays < 2 || f.everyDays > 60)
+    throw new ValidationError("frequency", "badNumber");
   return { kind: "interval", everyDays: f.everyDays };
 }
 
 export function sanitizeMedication(m: Medication): Medication {
-  const startDate = m.startDate ? assertDate("startDate", m.startDate) : DATE_KEY_RE.test(m.createdAt.slice(0, 10)) ? m.createdAt.slice(0, 10) : toDateKey(new Date());
+  const startDate = m.startDate
+    ? assertDate("startDate", m.startDate)
+    : DATE_KEY_RE.test(m.createdAt.slice(0, 10))
+      ? m.createdAt.slice(0, 10)
+      : toDateKey(new Date());
   const endDate = m.endDate ? assertDate("endDate", m.endDate) : null;
-  if (endDate && endDate < startDate) throw new ValidationError("endDate", "endBeforeStart");
+  if (endDate && endDate < startDate)
+    throw new ValidationError("endDate", "endBeforeStart");
   return {
     ...m,
     frequency: cleanFrequency(m.frequency),
@@ -45,7 +70,10 @@ export function sanitizeAppointment(a: Appointment): Appointment {
     location: cleanText("location", a.location, LIMITS.short),
     notes: cleanText("notes", a.notes, LIMITS.note),
     prep: cleanText("prep", a.prep ?? "", LIMITS.note),
-    status: a.status === "completed" || a.status === "cancelled" ? a.status : "scheduled",
+    status:
+      a.status === "completed" || a.status === "cancelled"
+        ? a.status
+        : "scheduled",
     shareWithCircle: a.shareWithCircle !== false,
   };
 }
@@ -56,16 +84,29 @@ export function sanitizeCheckin(c: Checkin): Checkin {
   if (!inScale(c.mood)) throw new ValidationError("mood", "required");
   if (!inScale(c.sleep)) throw new ValidationError("sleep", "required");
   if (!inScale(c.energy)) throw new ValidationError("energy", "required");
-  return { ...c, dateKey: assertDate("dateKey", c.dateKey), note: cleanText("note", c.note, LIMITS.note) };
+  return {
+    ...c,
+    dateKey: assertDate("dateKey", c.dateKey),
+    note: cleanText("note", c.note, LIMITS.note),
+  };
 }
 
-const MEDIA_TYPES = /^(image\/(jpeg|png|webp)|audio\/(webm|ogg|mp4|mpeg|wav)(;.*)?)$/;
+const MEDIA_TYPES =
+  /^(image\/(jpeg|png|webp)|audio\/(webm|ogg|mp4|mpeg|wav)(;.*)?)$/;
 
 export function sanitizeLifebookEntry(e: LifebookEntry): LifebookEntry {
   const media = e.media ?? null;
-  if (media && (!MEDIA_TYPES.test(media.contentType) || (media.kind !== "photo" && media.kind !== "audio"))) throw new ValidationError("media", "badMedia");
+  if (
+    media &&
+    (!MEDIA_TYPES.test(media.contentType) ||
+      (media.kind !== "photo" && media.kind !== "audio"))
+  )
+    throw new ValidationError("media", "badMedia");
   // Photos and voice memories may have a short caption only; other memories need words.
-  const detailRequired = !(media && (e.category === "photos" || e.category === "voice"));
+  const detailRequired = !(
+    media &&
+    (e.category === "photos" || e.category === "voice")
+  );
   return {
     ...e,
     title: cleanText("title", e.title, LIMITS.short, true),
@@ -80,17 +121,94 @@ export function sanitizeLifebookEntry(e: LifebookEntry): LifebookEntry {
 }
 
 export function sanitizeSchedule(s: CareSchedule): CareSchedule {
-  return { ...s, label: cleanText("label", s.label, LIMITS.name, true), time: assertTime("time", s.time), onDate: s.onDate ? assertDate("onDate", s.onDate) : null };
+  return {
+    ...s,
+    label: cleanText("label", s.label, LIMITS.name, true),
+    time: assertTime("time", s.time),
+    onDate: s.onDate ? assertDate("onDate", s.onDate) : null,
+  };
 }
 
 export function sanitizeSummary(s: CareSummary): CareSummary {
-  return { ...s, dateKey: assertDate("dateKey", s.dateKey), note: cleanText("note", s.note, LIMITS.note) };
+  return {
+    ...s,
+    dateKey: assertDate("dateKey", s.dateKey),
+    note: cleanText("note", s.note, LIMITS.note),
+  };
 }
 
 export function sanitizeInvite(i: InviteInput): InviteInput {
-  return { ...i, name: cleanText("name", i.name, LIMITS.name, true), email: cleanEmail("email", i.email) };
+  return {
+    ...i,
+    name: cleanText("name", i.name, LIMITS.name, true),
+    email: cleanEmail("email", i.email),
+  };
 }
 
 export function sanitizeHelpRequest(r: HelpRequest): HelpRequest {
-  return { ...r, message: cleanText("message", r.message, 500), status: r.status === "acknowledged" || r.status === "resolved" ? r.status : "open" };
+  return {
+    ...r,
+    message: cleanText("message", r.message, 500),
+    status:
+      r.status === "acknowledged" || r.status === "resolved"
+        ? r.status
+        : "open",
+  };
+}
+
+const MAX_LIST = 30;
+const cleanPhoneish = (field: string, v: string): string => {
+  const out = cleanText(field, v, 24);
+  if (out && !/^[+]?[0-9][0-9 ()-]{1,22}$/.test(out))
+    throw new ValidationError(field, "badPhone");
+  return out;
+};
+
+export function sanitizeMedical(p: MedicalProfile): MedicalProfile {
+  const hospitals = (p.hospitals ?? []).slice(0, MAX_LIST).map((h) => ({
+    id: cleanText("id", h.id, 64, true),
+    name: cleanText("hospitalName", h.name, LIMITS.short, true),
+    address: cleanText("address", h.address, 300),
+    phone: cleanPhoneish("phone", h.phone),
+    emergencyPhone: cleanPhoneish("emergencyPhone", h.emergencyPhone),
+    departments: cleanText("departments", h.departments, 300),
+    notes: cleanText("notes", h.notes, LIMITS.note),
+    source: "manual" as const,
+  }));
+  const ids = new Set(hospitals.map((h) => h.id));
+  const doctors = (p.doctors ?? []).slice(0, MAX_LIST).map((d) => ({
+    id: cleanText("id", d.id, 64, true),
+    name: cleanText("doctorName", d.name, LIMITS.short, true),
+    specialty: cleanText("specialty", d.specialty, 80),
+    hospitalId: d.hospitalId && ids.has(d.hospitalId) ? d.hospitalId : null,
+    phone: cleanPhoneish("phone", d.phone),
+    notes: cleanText("notes", d.notes, LIMITS.note),
+  }));
+  return {
+    bloodGroup: cleanText("bloodGroup", p.bloodGroup, 8),
+    allergies: cleanText("allergies", p.allergies, 500),
+    conditions: cleanText("conditions", p.conditions, 500),
+    instructions: cleanText("instructions", p.instructions, LIMITS.note),
+    emergencyContacts: (p.emergencyContacts ?? []).slice(0, 10).map((c) => ({
+      id: cleanText("id", c.id, 64, true),
+      name: cleanText("contactName", c.name, 80, true),
+      relationship: cleanText("relationship", c.relationship, 60),
+      phone:
+        cleanPhoneish("phone", c.phone) ||
+        (() => {
+          throw new ValidationError("phone", "required");
+        })(),
+    })),
+    hospitals,
+    doctors,
+    preferredHospitalId:
+      p.preferredHospitalId && ids.has(p.preferredHospitalId)
+        ? p.preferredHospitalId
+        : null,
+    preferredDoctorId:
+      p.preferredDoctorId && doctors.some((d) => d.id === p.preferredDoctorId)
+        ? p.preferredDoctorId
+        : null,
+    updatedAt: new Date().toISOString(),
+  };
 }

@@ -27,7 +27,9 @@ export type Action =
   | "summaries:write"
   | "help:request"
   | "help:read"
-  | "help:acknowledge";
+  | "help:acknowledge"
+  | "medical:read"
+  | "medical:write";
 
 /** Which grants unlock an action for a Care Circle member. Absent = elder only. */
 const MEMBER_GRANTS: Partial<Record<Action, readonly PermissionKey[] | "anyActiveMember">> = {
@@ -43,6 +45,8 @@ const MEMBER_GRANTS: Partial<Record<Action, readonly PermissionKey[] | "anyActiv
   "lifebook:contribute": ["contributeLifebook"],
   "schedules:propose": ["proposeSchedule"],
   "help:read": ["receiveHelp"],
+  "medical:read": ["viewMedications", "manageCare"],
+  "medical:write": ["manageCare"],
   "help:acknowledge": ["receiveHelp"],
 };
 

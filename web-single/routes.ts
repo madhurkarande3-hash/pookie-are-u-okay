@@ -19,6 +19,11 @@ export const ROUTES = {
   "/circle": "care-circle",
   "/settings": "prefs",
   "/privacy": "privacy",
+  "/simple": "simple",
+  "/remember": "remember",
+  "/admin": "care-team",
+  "/health": "health",
+  "/emergency": "emergency",
 } as const;
 
 export type RoutePath = keyof typeof ROUTES;

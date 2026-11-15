@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConsentForm, type ConsentChoices } from "@/components/ConsentForm";
+import { DecisionSupport, decisionReady, type DecisionChoice } from "@/components/DecisionSupport";
 import { Button } from "@/components/ui/Button";
 import { Card, PageHeader } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Choice";
@@ -24,6 +25,7 @@ export default function ConsentPage() {
     reminders: elder?.consent.reminders ?? false,
   });
   const [useSchedule, setUseSchedule] = useState(true);
+  const [decision, setDecision] = useState<DecisionChoice>({ mode: elder?.consent.decisionMode ?? "self", guardian: elder?.guardian ?? null });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
@@ -39,7 +41,8 @@ export default function ConsentPage() {
           await Promise.all(DEFAULT_SCHEDULE.map((slot) => repo.saveSchedule(elderId, proposeSchedule(actor, t(slot.labelKey), slot.time, now))));
         }
       }
-      await saveElder({ ...elder, onboarded: true, consent: { ...elder.consent, ...choices, updatedAt: now.toISOString() } });
+      if (!decisionReady(decision)) throw new Error(t("decide.incomplete"));
+      await saveElder({ ...elder, onboarded: true, guardian: decision.guardian, consent: { ...elder.consent, ...choices, decisionMode: decision.mode, updatedAt: now.toISOString() } });
       router.push("/home");
     } catch (err) {
       setError(err);
@@ -52,6 +55,9 @@ export default function ConsentPage() {
       <PageHeader title={t("consent.title")} subtitle={t("consent.subtitle")} />
       <Card>
         <ConsentForm value={choices} onChange={(patch) => setChoices((c) => ({ ...c, ...patch }))} />
+      </Card>
+      <Card>
+        <DecisionSupport value={decision} onChange={setDecision} />
       </Card>
       <Card>
         <Checkbox label={t("consent.useSchedule")} checked={useSchedule} onChange={setUseSchedule}>

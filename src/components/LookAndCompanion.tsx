@@ -31,7 +31,13 @@ const cardClass = (selected: boolean) =>
  * Two independent choices: the look (colours + lettering) and the companion
  * (who you talk to). Themes are never tied to gender or age.
  */
-export function LookAndCompanion({ onChange, compact = false }: { onChange?: (change: LookAndCompanionChange) => void; compact?: boolean }) {
+export function LookAndCompanion({
+  onChange,
+  compact = false,
+}: {
+  onChange?: (change: LookAndCompanionChange) => void;
+  compact?: boolean;
+}) {
   const { t, prefs, setPrefs } = usePrefs();
   const choose = (change: LookAndCompanionChange) => {
     setPrefs(change);
@@ -42,24 +48,47 @@ export function LookAndCompanion({ onChange, compact = false }: { onChange?: (ch
   return (
     <div className="space-y-6">
       <fieldset className="space-y-3">
-        <legend className="text-xl font-extrabold">{t("pookie.lookTitle")}</legend>
+        <legend className="text-xl font-extrabold">
+          {t("pookie.lookTitle")}
+        </legend>
         <div className="grid gap-3 sm:grid-cols-2">
           {THEME_KEYS.map((key) => {
             const theme = THEMES[key];
             const selected = prefs.pookie === key;
             return (
               <label key={key} className={cardClass(selected)}>
-                <input type="radio" name={compact ? "settings-look" : "look"} className="sr-only" checked={selected} onChange={() => choose({ pookie: key })} />
-                <span aria-hidden="true" className="flex items-center gap-2 rounded-2xl p-3" style={{ background: theme.bg }}>
+                <input
+                  type="radio"
+                  name={compact ? "settings-look" : "look"}
+                  className="sr-only"
+                  checked={selected}
+                  onChange={() => choose({ pookie: key })}
+                />
+                <span
+                  aria-hidden="true"
+                  className="flex items-center gap-2 rounded-2xl p-3"
+                  style={{ background: theme.bg }}
+                >
                   {theme.swatches.map((colour) => (
-                    <span key={colour} className="h-9 w-9 rounded-full border-2 border-line" style={{ background: colour }} />
+                    <span
+                      key={colour}
+                      className="h-9 w-9 rounded-full border-2 border-line"
+                      style={{ background: colour }}
+                    />
                   ))}
-                  <span className="ml-2 text-3xl font-extrabold" style={{ color: theme.ink, fontFamily: theme.font }}>
+                  <span
+                    className="ml-2 text-3xl font-extrabold"
+                    style={{ color: theme.ink, fontFamily: theme.font }}
+                  >
                     Aa
                   </span>
                 </span>
-                <span className="text-xl font-extrabold">{t(key === "sweet" ? "pookie.sweet" : "pookie.cool")}</span>
-                <span className="text-ink-soft">{t(key === "sweet" ? "pookie.sweetDesc" : "pookie.coolDesc")}</span>
+                <span className="text-xl font-extrabold">
+                  {t(key === "sweet" ? "pookie.sweet" : "pookie.cool")}
+                </span>
+                <span className="text-ink-soft">
+                  {t(key === "sweet" ? "pookie.sweetDesc" : "pookie.coolDesc")}
+                </span>
                 {selected ? <Selected /> : null}
               </label>
             );
@@ -68,17 +97,29 @@ export function LookAndCompanion({ onChange, compact = false }: { onChange?: (ch
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="text-xl font-extrabold">{t("pookie.companionTitle")}</legend>
+        <legend className="text-xl font-extrabold">
+          {t("pookie.companionTitle")}
+        </legend>
         <p className="text-ink-soft">{t("pookie.companionHint")}</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {COMPANIONS.map((key) => {
             const selected = (prefs.companion ?? "pookie") === key;
             return (
               <label key={key} className={cardClass(selected)}>
-                <input type="radio" name={compact ? "settings-companion" : "companion"} className="sr-only" checked={selected} onChange={() => choose({ companion: key })} />
+                <input
+                  type="radio"
+                  name={compact ? "settings-companion" : "companion"}
+                  className="sr-only"
+                  checked={selected}
+                  onChange={() => choose({ companion: key })}
+                />
                 <PookieAvatar companion={key} size={avatarSize} />
-                <span className="text-lg font-extrabold">{t(`persona.${key}.name`)}</span>
-                <span className="text-ink-soft">{t(`persona.${key}.tagline`)}</span>
+                <span className="text-lg font-extrabold">
+                  {t(`persona.${key}.name`)}
+                </span>
+                <span className="text-ink-soft">
+                  {t(`persona.${key}.tagline`)}
+                </span>
                 {selected ? <Selected /> : null}
               </label>
             );

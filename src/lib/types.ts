@@ -36,6 +36,29 @@ export interface Consent {
   /** Master switch: when true no Care Circle member can read anything. */
   sharingPaused: boolean;
   updatedAt: string;
+  /** Who gives consent: the elder alone, the elder with a supporter, or a lawful guardian. Absent = self. */
+  decisionMode?: DecisionMode;
+}
+
+export type DecisionMode = "self" | "supported" | "guardian";
+
+/** The person who helps with (supported) or gives (guardian) consent. Recorded, never assumed. */
+export interface Guardian {
+  name: string;
+  relationship: string;
+  /** The guardian confirmed they are legally allowed to decide for the elder. Required in guardian mode. */
+  attested: boolean;
+  recordedAt: string;
+}
+
+/** Wandering safety: only while Pookie is open and only with recorded consent. */
+export interface SafeZone {
+  enabled: boolean;
+  lat: number;
+  lng: number;
+  radiusM: number;
+  consentBy: "self" | "guardian";
+  consentAt: string;
 }
 
 export interface ElderProfile {
@@ -47,6 +70,10 @@ export interface ElderProfile {
   companion?: Companion;
   /** Optional phone number, shown to active Care Circle members so they can call. */
   phone?: string;
+  /** Plain words for "where am I", e.g. "your home in Ravet, Pune". */
+  homeLabel?: string;
+  guardian?: Guardian | null;
+  safeZone?: SafeZone | null;
   language: Language;
   consent: Consent;
   onboarded: boolean;
@@ -82,6 +109,12 @@ export type MedFrequency =
   /** Every N days counting from startDate (N ≥ 2). */
   | { kind: "interval"; everyDays: number };
 
+/** A short recorded message from someone the elder knows, played with the reminder. */
+export interface VoiceNote {
+  media: LifebookMedia;
+  byName: string;
+}
+
 export interface Medication {
   id: string;
   name: string;
@@ -97,6 +130,8 @@ export interface Medication {
   startDate?: string;
   /** Last day it is taken, inclusive. Null/absent = ongoing. */
   endDate?: string | null;
+  /** e.g. "Maa, time for your BP tablet" in her daughter's voice. */
+  voiceNote?: VoiceNote | null;
 }
 
 /** Only an explicit action by the elder creates a log. Silence never does. */
@@ -169,6 +204,8 @@ export interface LifebookRevision {
 }
 
 export interface LifebookEntry {
+  /** For people: a number to call from Simple Mode. */
+  phone?: string;
   id: string;
   category: LifebookCategory;
   title: string;
@@ -212,6 +249,8 @@ export interface CareSchedule {
 export type HelpStatus = "open" | "acknowledged" | "resolved";
 export interface HelpRequest {
   id: string;
+  /** "help" = the elder pressed the button; "safezone" = left the safe area they agreed to. Absent = help. */
+  kind?: "help" | "safezone";
   createdAt: string;
   /** Optional words from the elder, written for their Care Circle. */
   message: string;
@@ -244,4 +283,48 @@ export class ValidationError extends Error {
     super(message);
     this.name = "ValidationError";
   }
+}
+
+/** Healthcare details the elder (or someone with manageCare) keeps. Never sent to AI. */
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
+/** Entered by hand; Pookie never invents hospitals, services or schedules. */
+export interface Hospital {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  emergencyPhone: string;
+  departments: string;
+  notes: string;
+  /** Where this came from. Only "manual" exists today; verified listings would be labelled separately. */
+  source: "manual";
+}
+
+export interface Doctor {
+  id: string;
+  name: string;
+  specialty: string;
+  hospitalId: string | null;
+  phone: string;
+  notes: string;
+}
+
+export interface MedicalProfile {
+  bloodGroup: string;
+  allergies: string;
+  conditions: string;
+  /** e.g. "Carries an inhaler". Written by the elder or care team, as given by their doctor. */
+  instructions: string;
+  emergencyContacts: EmergencyContact[];
+  hospitals: Hospital[];
+  doctors: Doctor[];
+  preferredHospitalId: string | null;
+  preferredDoctorId: string | null;
+  updatedAt: string;
 }

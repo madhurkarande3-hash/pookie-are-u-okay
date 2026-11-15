@@ -1,5 +1,16 @@
 # Changelog
 
+## Alzheimer's care pack, health hub and multi-provider AI
+
+- Simple Mode (`/simple`), reminiscence (`/remember`), "Where am I?", family voice reminders on medicines,
+  consented safe area (app-open only), "Today with …" family digest, supported/guardian decision-making.
+- Care-team login and multi-patient dashboard (`/admin`, `careTeam` claim, `careTeamPatients` callable,
+  `functions/scripts/grant-care-team.mjs`); clearly labelled demo login in Demo Mode.
+- Health hub (`/health`) and Emergency screen (`/emergency`); stored at `elders/{id}/private/medical`.
+- AI provider manager: Adaption Labs → Gemini → OpenAI → Groq → OpenRouter, configurable, timeouts,
+  bounded retries, error categories, per-provider LifeBook allow-list, admin-only diagnostics API.
+
+
 ## M1 — Deploy and safety net
 Fictional sample data (one tap) and a seed script for demo accounts; Playwright end-to-end and axe accessibility suite (22 checks); GitHub Actions CI (typecheck, lint, unit, rules emulator, e2e, builds); Firebase App Hosting config; documented environment variables.
 

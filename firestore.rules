@@ -105,6 +105,14 @@ service cloud.firestore {
         && (!('companion' in request.resource.data) || request.resource.data.companion in ['pookie', 'granny', 'kaka'])
         && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.matches('^$|^[+]?[0-9][0-9 ()-]{5,19}$')))
         && request.resource.data.language in ['en', 'hi']
+        && shortText(request.resource.data.get('homeLabel', ''), 120)
+        && request.resource.data.consent.get('decisionMode', 'self') in ['self', 'supported', 'guardian']
+        && (request.resource.data.consent.get('decisionMode', 'self') != 'guardian'
+            || (request.resource.data.guardian.attested == true && shortText(request.resource.data.guardian.name, 80) && request.resource.data.guardian.name.size() > 0))
+        && (request.resource.data.get('safeZone', null) == null
+            || (isBool(request.resource.data.safeZone.enabled) && request.resource.data.safeZone.radiusM is number
+                && request.resource.data.safeZone.radiusM >= 100 && request.resource.data.safeZone.radiusM <= 5000
+                && request.resource.data.safeZone.consentBy in ['self', 'guardian']))
         && isBool(request.resource.data.consent.aiPersonalization)
         && isBool(request.resource.data.consent.saveSummaries)
         && isBool(request.resource.data.consent.reminders)
@@ -167,7 +175,11 @@ service cloud.firestore {
           && isBool(request.resource.data.active)
           && (!('frequency' in request.resource.data) || request.resource.data.frequency.kind in ['daily', 'weekdays', 'interval'])
           && (!('startDate' in request.resource.data) || isDate(request.resource.data.startDate))
-          && (!('endDate' in request.resource.data) || request.resource.data.endDate == null || isDate(request.resource.data.endDate));
+          && (!('endDate' in request.resource.data) || request.resource.data.endDate == null || isDate(request.resource.data.endDate))
+          && (!('voiceNote' in request.resource.data) || request.resource.data.voiceNote == null
+              || (request.resource.data.voiceNote.media.kind == 'audio'
+                  && request.resource.data.voiceNote.media.path.matches('^elders/' + elderId + '/media/.*')
+                  && shortText(request.resource.data.voiceNote.byName, 80)));
       }
 
       // Only the elder can say a dose was taken or missed.
@@ -266,12 +278,29 @@ service cloud.firestore {
 
       // "I'd like some help": created only by the elder, never automatically.
       // Members allowed to receive help may read it and say they are on it.
+      // Medical profile, hospitals, doctors, emergency contacts. Never readable by the AI functions' callers.
+      match /private/{docId} {
+        allow read: if docId == 'medical' && (isElder(elderId) || hasPerm(elderId, 'viewMedications') || hasPerm(elderId, 'manageCare'));
+        allow delete: if docId == 'medical' && isElder(elderId);
+        allow create, update: if docId == 'medical' && (isElder(elderId) || hasPerm(elderId, 'manageCare'))
+          && request.resource.data.keys().hasOnly(['bloodGroup', 'allergies', 'conditions', 'instructions', 'emergencyContacts',
+               'hospitals', 'doctors', 'preferredHospitalId', 'preferredDoctorId', 'updatedAt'])
+          && shortText(request.resource.data.bloodGroup, 8)
+          && shortText(request.resource.data.allergies, 500)
+          && shortText(request.resource.data.conditions, 500)
+          && shortText(request.resource.data.instructions, 1000)
+          && request.resource.data.emergencyContacts is list && request.resource.data.emergencyContacts.size() <= 10
+          && request.resource.data.hospitals is list && request.resource.data.hospitals.size() <= 30
+          && request.resource.data.doctors is list && request.resource.data.doctors.size() <= 30;
+      }
+
       match /helpRequests/{id} {
         allow read: if isElder(elderId) || hasPerm(elderId, 'receiveHelp');
         allow delete: if isElder(elderId);
         allow create: if isElder(elderId)
           && request.resource.data.status == 'open'
           && request.resource.data.acknowledgedBy == null
+          && (!('kind' in request.resource.data) || request.resource.data.kind in ['help', 'safezone'])
           && shortText(request.resource.data.message, 500);
         allow update: if isElder(elderId)
           && request.resource.data.status in ['open', 'acknowledged', 'resolved']

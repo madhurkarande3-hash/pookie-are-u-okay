@@ -16,6 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import type {
+  MedicalProfile,
   Actor,
   Appointment,
   CareSchedule,
@@ -42,9 +43,20 @@ import {
   sanitizeMedication,
   sanitizeSchedule,
   sanitizeSummary,
+  sanitizeMedical,
 } from "./sanitize";
 
-type Sub = "members" | "invites" | "medications" | "doseLogs" | "appointments" | "checkins" | "lifebook" | "schedules" | "summaries" | "helpRequests";
+type Sub =
+  | "members"
+  | "invites"
+  | "medications"
+  | "doseLogs"
+  | "appointments"
+  | "checkins"
+  | "lifebook"
+  | "schedules"
+  | "summaries"
+  | "helpRequests";
 
 /**
  * Cloud Firestore storage. Access control lives in firestore.rules; the
@@ -67,13 +79,24 @@ export class FirebaseRepository implements Repository {
     return collection(this.db, "elders", elderId, sub);
   }
 
-  private async list<T extends { id: string }>(elderId: string, sub: Sub, ...constraints: QueryConstraint[]): Promise<T[]> {
+  private async list<T extends { id: string }>(
+    elderId: string,
+    sub: Sub,
+    ...constraints: QueryConstraint[]
+  ): Promise<T[]> {
     const snap = await getDocs(query(this.col(elderId, sub), ...constraints));
     return snap.docs.map((d) => ({ ...(d.data() as T), id: d.id }));
   }
 
-  private async put(elderId: string, sub: Sub, item: { id: string }): Promise<void> {
-    await setDoc(doc(this.db, "elders", elderId, sub, item.id), item as DocumentData);
+  private async put(
+    elderId: string,
+    sub: Sub,
+    item: { id: string },
+  ): Promise<void> {
+    await setDoc(
+      doc(this.db, "elders", elderId, sub, item.id),
+      item as DocumentData,
+    );
   }
 
   private async remove(elderId: string, sub: Sub, id: string): Promise<void> {
@@ -82,7 +105,9 @@ export class FirebaseRepository implements Repository {
 
   async getElder(elderId: string): Promise<ElderProfile | null> {
     const snap = await getDoc(doc(this.db, "elders", elderId));
-    return snap.exists() ? ({ ...(snap.data() as ElderProfile), id: snap.id }) : null;
+    return snap.exists()
+      ? { ...(snap.data() as ElderProfile), id: snap.id }
+      : null;
   }
 
   async saveElder(profile: ElderProfile): Promise<void> {
@@ -93,17 +118,37 @@ export class FirebaseRepository implements Repository {
     const actor = this.getActor();
     if (!this.isElder) {
       if (!actor) return [];
-      const own = await getDoc(doc(this.db, "elders", elderId, "members", actor.uid));
-      return own.exists() ? [{ ...(own.data() as CircleMember), id: own.id }] : [];
+      const own = await getDoc(
+        doc(this.db, "elders", elderId, "members", actor.uid),
+      );
+      return own.exists()
+        ? [{ ...(own.data() as CircleMember), id: own.id }]
+        : [];
     }
     const [members, invites] = await Promise.all([
       this.list<CircleMember>(elderId, "members"),
-      this.list<CircleMember & { status: string }>(elderId, "invites", where("status", "in", ["pending", "declined"])),
+      this.list<CircleMember & { status: string }>(
+        elderId,
+        "invites",
+        where("status", "in", ["pending", "declined"]),
+      ),
     ]);
-    return [...members, ...invites.map((i) => ({ ...i, status: i.status === "declined" ? ("declined" as const) : ("invited" as const) }))];
+    return [
+      ...members,
+      ...invites.map((i) => ({
+        ...i,
+        status:
+          i.status === "declined"
+            ? ("declined" as const)
+            : ("invited" as const),
+      })),
+    ];
   }
 
-  async inviteMember(elderId: string, invite: InviteInput): Promise<CircleMember> {
+  async inviteMember(
+    elderId: string,
+    invite: InviteInput,
+  ): Promise<CircleMember> {
     const clean = sanitizeInvite(invite);
     const elder = await this.getElder(elderId);
     const invitedAt = new Date().toISOString();
@@ -118,17 +163,28 @@ export class FirebaseRepository implements Repository {
     return { ...clean, id: clean.email, status: "invited", invitedAt };
   }
 
-  async updateMember(elderId: string, member: CircleMember, patch: Partial<Pick<CircleMember, "permissions" | "status">>): Promise<void> {
+  async updateMember(
+    elderId: string,
+    member: CircleMember,
+    patch: Partial<Pick<CircleMember, "permissions" | "status">>,
+  ): Promise<void> {
     if (member.status === "invited") {
-      if (patch.permissions) await updateDoc(doc(this.db, "elders", elderId, "invites", member.id), { permissions: patch.permissions });
+      if (patch.permissions)
+        await updateDoc(doc(this.db, "elders", elderId, "invites", member.id), {
+          permissions: patch.permissions,
+        });
       return;
     }
-    await updateDoc(doc(this.db, "elders", elderId, "members", member.id), patch);
+    await updateDoc(
+      doc(this.db, "elders", elderId, "members", member.id),
+      patch,
+    );
   }
 
   async removeMember(elderId: string, member: CircleMember): Promise<void> {
     const batch = writeBatch(this.db);
-    if (member.status !== "invited") batch.delete(doc(this.db, "elders", elderId, "members", member.id));
+    if (member.status !== "invited")
+      batch.delete(doc(this.db, "elders", elderId, "members", member.id));
     // Removing the invitation too means a revoked member cannot re-join with it.
     batch.delete(doc(this.db, "elders", elderId, "invites", member.email));
     await batch.commit();
@@ -144,7 +200,11 @@ export class FirebaseRepository implements Repository {
     return this.remove(elderId, "medications", medicationId);
   }
   listDoseLogs(elderId: string, dateKey: string): Promise<DoseLog[]> {
-    return this.list<DoseLog>(elderId, "doseLogs", where("dateKey", "==", dateKey));
+    return this.list<DoseLog>(
+      elderId,
+      "doseLogs",
+      where("dateKey", "==", dateKey),
+    );
   }
   saveDoseLog(elderId: string, log: DoseLog): Promise<void> {
     return this.put(elderId, "doseLogs", log);
@@ -157,7 +217,13 @@ export class FirebaseRepository implements Repository {
     const actor = this.getActor();
     const seesAll = this.isElder || actor?.permissions?.manageCare === true;
     const shared = seesAll ? [] : [where("shareWithCircle", "==", true)];
-    return this.list<Appointment>(elderId, "appointments", ...shared, orderBy("date"), orderBy("time"));
+    return this.list<Appointment>(
+      elderId,
+      "appointments",
+      ...shared,
+      orderBy("date"),
+      orderBy("time"),
+    );
   }
   saveAppointment(elderId: string, appointment: Appointment): Promise<void> {
     return this.put(elderId, "appointments", sanitizeAppointment(appointment));
@@ -168,7 +234,13 @@ export class FirebaseRepository implements Repository {
 
   listCheckins(elderId: string, max = 30): Promise<Checkin[]> {
     const shared = this.isElder ? [] : [where("shareWithCircle", "==", true)];
-    return this.list<Checkin>(elderId, "checkins", ...shared, orderBy("createdAt", "desc"), limit(max));
+    return this.list<Checkin>(
+      elderId,
+      "checkins",
+      ...shared,
+      orderBy("createdAt", "desc"),
+      limit(max),
+    );
   }
   saveCheckin(elderId: string, checkin: Checkin): Promise<void> {
     return this.put(elderId, "checkins", sanitizeCheckin(checkin));
@@ -179,29 +251,64 @@ export class FirebaseRepository implements Repository {
 
   async listLifebook(elderId: string): Promise<LifebookEntry[]> {
     const actor = this.getActor();
-    if (this.isElder) return this.list<LifebookEntry>(elderId, "lifebook", orderBy("createdAt", "desc"));
+    if (this.isElder)
+      return this.list<LifebookEntry>(
+        elderId,
+        "lifebook",
+        orderBy("createdAt", "desc"),
+      );
     // Two queries the rules can each prove safe: shared memories (viewers) and own suggestions (contributors).
     const queries: Promise<LifebookEntry[]>[] = [];
-    if (actor?.permissions?.viewLifebook) queries.push(this.list<LifebookEntry>(elderId, "lifebook", where("shareWithCircle", "==", true), orderBy("createdAt", "desc")));
-    if (actor?.permissions?.contributeLifebook) queries.push(this.list<LifebookEntry>(elderId, "lifebook", where("source.byUid", "==", actor.uid), orderBy("createdAt", "desc")));
-    const merged = new Map((await Promise.all(queries)).flat().map((e) => [e.id, e]));
-    return [...merged.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (actor?.permissions?.viewLifebook)
+      queries.push(
+        this.list<LifebookEntry>(
+          elderId,
+          "lifebook",
+          where("shareWithCircle", "==", true),
+          orderBy("createdAt", "desc"),
+        ),
+      );
+    if (actor?.permissions?.contributeLifebook)
+      queries.push(
+        this.list<LifebookEntry>(
+          elderId,
+          "lifebook",
+          where("source.byUid", "==", actor.uid),
+          orderBy("createdAt", "desc"),
+        ),
+      );
+    const merged = new Map(
+      (await Promise.all(queries)).flat().map((e) => [e.id, e]),
+    );
+    return [...merged.values()].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
   }
   saveLifebookEntry(elderId: string, entry: LifebookEntry): Promise<void> {
     const clean = sanitizeLifebookEntry(entry);
     const actor = this.getActor();
     const toStore: LifebookEntry =
-      this.isElder || !actor ? clean : { ...clean, confirmed: false, source: { type: "circle", byUid: actor.uid, byName: actor.name } };
+      this.isElder || !actor
+        ? clean
+        : {
+            ...clean,
+            confirmed: false,
+            source: { type: "circle", byUid: actor.uid, byName: actor.name },
+          };
     return this.put(elderId, "lifebook", toStore);
   }
   async deleteLifebookEntry(elderId: string, entryId: string): Promise<void> {
-    const snap = await getDoc(doc(this.db, "elders", elderId, "lifebook", entryId));
+    const snap = await getDoc(
+      doc(this.db, "elders", elderId, "lifebook", entryId),
+    );
     const path = (snap.data() as LifebookEntry | undefined)?.media?.path;
     await this.remove(elderId, "lifebook", entryId);
     if (path) {
       const { ref, deleteObject } = await import("firebase/storage");
       // The memory is gone either way; a leftover file is removed with the account.
-      await deleteObject(ref(getFirebase().storage, path)).catch(() => undefined);
+      await deleteObject(ref(getFirebase().storage, path)).catch(
+        () => undefined,
+      );
     }
   }
 
@@ -217,7 +324,13 @@ export class FirebaseRepository implements Repository {
 
   listSummaries(elderId: string, max = 30): Promise<CareSummary[]> {
     const shared = this.isElder ? [] : [where("shared", "==", true)];
-    return this.list<CareSummary>(elderId, "summaries", ...shared, orderBy("createdAt", "desc"), limit(max));
+    return this.list<CareSummary>(
+      elderId,
+      "summaries",
+      ...shared,
+      orderBy("createdAt", "desc"),
+      limit(max),
+    );
   }
   saveSummary(elderId: string, summary: CareSummary): Promise<void> {
     return this.put(elderId, "summaries", sanitizeSummary(summary));
@@ -226,12 +339,25 @@ export class FirebaseRepository implements Repository {
     return this.remove(elderId, "summaries", summaryId);
   }
 
-  async saveLifebookMedia(elderId: string, entryId: string, blob: Blob, kind: LifebookMedia["kind"]): Promise<LifebookMedia> {
+  async saveLifebookMedia(
+    elderId: string,
+    entryId: string,
+    blob: Blob,
+    kind: LifebookMedia["kind"],
+  ): Promise<LifebookMedia> {
     const { ref, uploadBytes } = await import("firebase/storage");
     const uid = this.getActor()?.uid ?? "unknown";
-    const ext = blob.type.startsWith("image/") ? "jpg" : blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "m4a" : "webm";
+    const ext = blob.type.startsWith("image/")
+      ? "jpg"
+      : blob.type.includes("ogg")
+        ? "ogg"
+        : blob.type.includes("mp4")
+          ? "m4a"
+          : "webm";
     const path = `elders/${elderId}/media/${uid}/${entryId}.${ext}`;
-    await uploadBytes(ref(getFirebase().storage, path), blob, { contentType: blob.type });
+    await uploadBytes(ref(getFirebase().storage, path), blob, {
+      contentType: blob.type,
+    });
     return { kind, contentType: blob.type, path };
   }
   async lifebookMediaUrl(media: LifebookMedia): Promise<string> {
@@ -241,23 +367,46 @@ export class FirebaseRepository implements Repository {
   }
 
   listHelpRequests(elderId: string, max = 20): Promise<HelpRequest[]> {
-    return this.list<HelpRequest>(elderId, "helpRequests", orderBy("createdAt", "desc"), limit(max));
+    return this.list<HelpRequest>(
+      elderId,
+      "helpRequests",
+      orderBy("createdAt", "desc"),
+      limit(max),
+    );
   }
   saveHelpRequest(elderId: string, request: HelpRequest): Promise<void> {
     return this.put(elderId, "helpRequests", sanitizeHelpRequest(request));
   }
-  async acknowledgeHelpRequest(elderId: string, requestId: string): Promise<void> {
+  async acknowledgeHelpRequest(
+    elderId: string,
+    requestId: string,
+  ): Promise<void> {
     const actor = this.getActor();
     if (!actor) return;
-    await updateDoc(doc(this.db, "elders", elderId, "helpRequests", requestId), {
-      status: "acknowledged",
-      acknowledgedBy: { uid: actor.uid, name: actor.name.slice(0, 80) },
-      acknowledgedAt: new Date().toISOString(),
-    });
+    await updateDoc(
+      doc(this.db, "elders", elderId, "helpRequests", requestId),
+      {
+        status: "acknowledged",
+        acknowledgedBy: { uid: actor.uid, name: actor.name.slice(0, 80) },
+        acknowledgedAt: new Date().toISOString(),
+      },
+    );
   }
 
   async exportAll(elderId: string): Promise<ExportBundle> {
-    const [elder, circle, medications, doseLogs, appointments, checkins, lifebook, schedules, summaries, helpRequests] = await Promise.all([
+    const [
+      elder,
+      circle,
+      medications,
+      doseLogs,
+      appointments,
+      checkins,
+      lifebook,
+      schedules,
+      summaries,
+      helpRequests,
+      medical,
+    ] = await Promise.all([
       this.getElder(elderId),
       this.listCircle(elderId),
       this.listMedications(elderId),
@@ -268,8 +417,22 @@ export class FirebaseRepository implements Repository {
       this.listSchedules(elderId),
       this.list<CareSummary>(elderId, "summaries"),
       this.list<HelpRequest>(elderId, "helpRequests"),
+      this.getMedical(elderId).catch(() => null),
     ]);
-    return { exportedAt: new Date().toISOString(), elder, circle, medications, doseLogs, appointments, checkins, lifebook, schedules, summaries, helpRequests };
+    return {
+      exportedAt: new Date().toISOString(),
+      elder,
+      circle,
+      medications,
+      doseLogs,
+      appointments,
+      checkins,
+      lifebook,
+      schedules,
+      summaries,
+      helpRequests,
+      medical,
+    };
   }
 
   /**
@@ -279,17 +442,42 @@ export class FirebaseRepository implements Repository {
    * Storage files and nested collections in one pass.
    */
   async deleteAll(_elderId: string): Promise<void> {
-    const [{ httpsCallable }, { getFirebase }] = await Promise.all([import("firebase/functions"), import("@/lib/firebase/client")]);
+    const [{ httpsCallable }, { getFirebase }] = await Promise.all([
+      import("firebase/functions"),
+      import("@/lib/firebase/client"),
+    ]);
     await httpsCallable(getFirebase().functions, "deleteMyAccount")({});
   }
 
   async listNotices(uid: string): Promise<CircleNotice[]> {
-    const snap = await getDocs(query(collection(this.db, "users", uid, "notices"), orderBy("createdAt", "desc"), limit(20)));
+    const snap = await getDocs(
+      query(
+        collection(this.db, "users", uid, "notices"),
+        orderBy("createdAt", "desc"),
+        limit(20),
+      ),
+    );
     return snap.docs.map((d) => ({ ...(d.data() as CircleNotice), id: d.id }));
   }
 
   async markNoticeRead(uid: string, noticeId: string): Promise<void> {
-    await updateDoc(doc(this.db, "users", uid, "notices", noticeId), { read: true });
+    await updateDoc(doc(this.db, "users", uid, "notices", noticeId), {
+      read: true,
+    });
+  }
+
+  async getMedical(elderId: string): Promise<MedicalProfile | null> {
+    const snap = await getDoc(
+      doc(this.db, "elders", elderId, "private", "medical"),
+    );
+    return snap.exists() ? (snap.data() as MedicalProfile) : null;
+  }
+
+  async saveMedical(elderId: string, profile: MedicalProfile): Promise<void> {
+    await setDoc(
+      doc(this.db, "elders", elderId, "private", "medical"),
+      sanitizeMedical(profile),
+    );
   }
 
   async getNotifyPrefs(uid: string): Promise<NotifyPrefs | null> {
@@ -298,6 +486,9 @@ export class FirebaseRepository implements Repository {
   }
 
   async saveNotifyPrefs(uid: string, prefs: NotifyPrefs): Promise<void> {
-    await setDoc(doc(this.db, "users", uid, "settings", "notify"), sanitizeNotifyPrefs(prefs));
+    await setDoc(
+      doc(this.db, "users", uid, "settings", "notify"),
+      sanitizeNotifyPrefs(prefs),
+    );
   }
 }

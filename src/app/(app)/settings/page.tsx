@@ -6,6 +6,12 @@ import { ConsentForm, type ConsentChoices } from "@/components/ConsentForm";
 import { LookAndCompanion } from "@/components/LookAndCompanion";
 import { ProfileForm } from "@/components/ProfileForm";
 import { ReminderPrefsForm } from "@/components/ReminderPrefsForm";
+import { SafeZoneSettings } from "@/components/SafeZoneSettings";
+import {
+  DecisionSupport,
+  decisionReady,
+  type DecisionChoice,
+} from "@/components/DecisionSupport";
 import { LanguageSwitch } from "@/components/TopBar";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader, Section } from "@/components/ui/Card";
@@ -47,13 +53,24 @@ export default function SettingsPage() {
   const updateConsent = (patch: Partial<ConsentChoices>) =>
     attempt(async () => {
       if (!elder) return;
-      await saveElder({ ...elder, consent: { ...elder.consent, ...patch, updatedAt: new Date().toISOString() } });
+      await saveElder({
+        ...elder,
+        consent: {
+          ...elder.consent,
+          ...patch,
+          updatedAt: new Date().toISOString(),
+        },
+      });
     });
 
   const exportData = () =>
     attempt(async () => {
       const bundle = await repo.exportAll(elderId);
-      const url = URL.createObjectURL(new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" }));
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(bundle, null, 2)], {
+          type: "application/json",
+        }),
+      );
       const link = document.createElement("a");
       link.href = url;
       link.download = "pookie-my-data.json";
@@ -64,7 +81,8 @@ export default function SettingsPage() {
   const deleteEverything = () =>
     attempt(async () => {
       await repo.deleteAll(elderId);
-      if (mode === "firebase") await (await import("@/lib/firebase/auth")).signOut();
+      if (mode === "firebase")
+        await (await import("@/lib/firebase/auth")).signOut();
       await refresh();
       router.replace("/");
     });
@@ -95,7 +113,8 @@ export default function SettingsPage() {
             compact
             onChange={(change) => {
               // Keep the stored profile in step so the server uses the same companion.
-              if (isElder && elder) void saveElder({ ...elder, ...change }).catch(() => undefined);
+              if (isElder && elder)
+                void saveElder({ ...elder, ...change }).catch(() => undefined);
             }}
           />
           <ChoiceGroup<TextSize>
@@ -109,7 +128,20 @@ export default function SettingsPage() {
               { value: "xlarge", label: t("settings.text.xlarge") },
             ]}
           />
-          <Toggle label={t("settings.reduceMotion")} description={t("settings.reduceMotionDesc")} checked={prefs.reduceMotion} onChange={(reduceMotion) => setPrefs({ reduceMotion })} />
+          <Toggle
+            label={t("settings.reduceMotion")}
+            description={t("settings.reduceMotionDesc")}
+            checked={prefs.reduceMotion}
+            onChange={(reduceMotion) => setPrefs({ reduceMotion })}
+          />
+          {isElder ? (
+            <Toggle
+              label={t("simple.toggle")}
+              description={t("simple.toggleDesc")}
+              checked={prefs.simpleMode}
+              onChange={(simpleMode) => setPrefs({ simpleMode })}
+            />
+          ) : null}
         </Card>
       </Section>
 
@@ -119,6 +151,12 @@ export default function SettingsPage() {
 
       {isElder && elder ? (
         <>
+          <Section title={t("decide.title")} id="set-decide">
+            <DecisionCard />
+          </Section>
+          <Section title={t("safe.title")} id="set-safe">
+            <SafeZoneSettings />
+          </Section>
           <Section title={t("settings.privacy")} id="set-privacy">
             <Card className="space-y-3">
               <p className="font-extrabold">{t("privacy.linkTitle")}</p>
@@ -128,13 +166,23 @@ export default function SettingsPage() {
               </ButtonLink>
             </Card>
             <Card>
-              <ConsentForm value={elder.consent} onChange={(patch) => void updateConsent(patch)} disabled={busy} />
+              <ConsentForm
+                value={elder.consent}
+                onChange={(patch) => void updateConsent(patch)}
+                disabled={busy}
+              />
             </Card>
             <Card className="space-y-3">
               <p className="font-extrabold">{t("settings.notifyTitle")}</p>
               <p className="text-ink-soft">{t(`settings.notify.${notify}`)}</p>
               {notify === "default" ? (
-                <Button variant="secondary" icon="bell" onClick={() => void Notification.requestPermission().then(setNotify)}>
+                <Button
+                  variant="secondary"
+                  icon="bell"
+                  onClick={() =>
+                    void Notification.requestPermission().then(setNotify)
+                  }
+                >
                   {t("settings.notifyEnable")}
                 </Button>
               ) : null}
@@ -150,27 +198,51 @@ export default function SettingsPage() {
 
           <Section title={t("settings.data")} id="set-data">
             <Card className="space-y-3">
-              <p>{repo.mode === "demo" ? t("settings.dataDemo") : t("settings.dataLive")}</p>
+              <p>
+                {repo.mode === "demo"
+                  ? t("settings.dataDemo")
+                  : t("settings.dataLive")}
+              </p>
               <div className="flex flex-wrap gap-2">
-                <Button variant="secondary" busy={busy} onClick={() => void exportData()}>
+                <Button
+                  variant="secondary"
+                  busy={busy}
+                  onClick={() => void exportData()}
+                >
                   {t("settings.export")}
                 </Button>
                 {confirmDelete ? (
                   <>
-                    <Button variant="danger" icon="trash" busy={busy} onClick={() => void deleteEverything()}>
+                    <Button
+                      variant="danger"
+                      icon="trash"
+                      busy={busy}
+                      onClick={() => void deleteEverything()}
+                    >
                       {t("settings.deleteConfirm")}
                     </Button>
-                    <Button variant="quiet" onClick={() => setConfirmDelete(false)}>
+                    <Button
+                      variant="quiet"
+                      onClick={() => setConfirmDelete(false)}
+                    >
                       {t("common.cancel")}
                     </Button>
                   </>
                 ) : (
-                  <Button variant="danger" icon="trash" onClick={() => setConfirmDelete(true)}>
+                  <Button
+                    variant="danger"
+                    icon="trash"
+                    onClick={() => setConfirmDelete(true)}
+                  >
                     {t("settings.delete")}
                   </Button>
                 )}
               </div>
-              {confirmDelete ? <p className="font-bold text-danger">{t("settings.deleteWarning")}</p> : null}
+              {confirmDelete ? (
+                <p className="font-bold text-danger">
+                  {t("settings.deleteWarning")}
+                </p>
+              ) : null}
             </Card>
           </Section>
         </>
@@ -182,7 +254,12 @@ export default function SettingsPage() {
             <p>{t("settings.memberDelete")}</p>
             {confirmDelete ? (
               <div className="flex flex-wrap gap-2">
-                <Button variant="danger" icon="trash" busy={busy} onClick={() => void deleteEverything()}>
+                <Button
+                  variant="danger"
+                  icon="trash"
+                  busy={busy}
+                  onClick={() => void deleteEverything()}
+                >
                   {t("settings.deleteConfirm")}
                 </Button>
                 <Button variant="quiet" onClick={() => setConfirmDelete(false)}>
@@ -190,7 +267,11 @@ export default function SettingsPage() {
                 </Button>
               </div>
             ) : (
-              <Button variant="danger" icon="trash" onClick={() => setConfirmDelete(true)}>
+              <Button
+                variant="danger"
+                icon="trash"
+                onClick={() => setConfirmDelete(true)}
+              >
                 {t("settings.memberDeleteButton")}
               </Button>
             )}
@@ -212,11 +293,20 @@ export default function SettingsPage() {
               {t("settings.demoSample")}
             </Button>
             <div className="flex flex-wrap gap-2">
-              <Button variant={demo.personaId === "elder" ? "primary" : "secondary"} aria-pressed={demo.personaId === "elder"} onClick={() => demo.setPersona("elder")}>
+              <Button
+                variant={demo.personaId === "elder" ? "primary" : "secondary"}
+                aria-pressed={demo.personaId === "elder"}
+                onClick={() => demo.setPersona("elder")}
+              >
                 {t("settings.demoElder")}
               </Button>
               {demo.activeMembers().map((m) => (
-                <Button key={m.id} variant={demo.personaId === m.id ? "primary" : "secondary"} aria-pressed={demo.personaId === m.id} onClick={() => demo.setPersona(m.id)}>
+                <Button
+                  key={m.id}
+                  variant={demo.personaId === m.id ? "primary" : "secondary"}
+                  aria-pressed={demo.personaId === m.id}
+                  onClick={() => demo.setPersona(m.id)}
+                >
                   {m.name} ({t(`role.${m.role}`)})
                 </Button>
               ))}
@@ -229,11 +319,74 @@ export default function SettingsPage() {
         </Button>
       )}
 
-      {error ? <p role="alert" className="font-bold text-danger">{describeError(error, t)}</p> : null}
+      {error ? (
+        <p role="alert" className="font-bold text-danger">
+          {describeError(error, t)}
+        </p>
+      ) : null}
 
       <Notice>
         <p>{t("welcome.disclaimer")}</p>
       </Notice>
     </>
+  );
+}
+
+/** Who makes privacy choices: the elder, with a supporter, or a lawful guardian. Saved changes are audit-logged. */
+function DecisionCard() {
+  const { t } = usePrefs();
+  const { elder } = useReadySession();
+  const { saveElder } = useSession();
+  const [choice, setChoice] = useState<DecisionChoice>({
+    mode: elder?.consent.decisionMode ?? "self",
+    guardian: elder?.guardian ?? null,
+  });
+  const [state, setState] = useState<"idle" | "busy" | "saved">("idle");
+  const [error, setError] = useState<unknown>(null);
+  if (!elder) return null;
+  return (
+    <Card className="space-y-3">
+      <DecisionSupport
+        value={choice}
+        onChange={(c) => {
+          setChoice(c);
+          setState("idle");
+        }}
+      />
+      <Button
+        busy={state === "busy"}
+        disabled={!decisionReady(choice)}
+        onClick={() => {
+          setState("busy");
+          setError(null);
+          void saveElder({
+            ...elder,
+            guardian: choice.guardian,
+            consent: {
+              ...elder.consent,
+              decisionMode: choice.mode,
+              updatedAt: new Date().toISOString(),
+            },
+          })
+            .then(() => setState("saved"))
+            .catch((e: unknown) => {
+              setError(e);
+              setState("idle");
+            });
+        }}
+      >
+        {t("common.save")}
+      </Button>
+      {state === "saved" ? (
+        <p role="status" className="font-bold">
+          {t("decide.saved")}
+        </p>
+      ) : null}
+      {error ? (
+        <p role="alert" className="font-bold text-danger">
+          {describeError(error, t)}
+        </p>
+      ) : null}
+    </Card>
   );
 }

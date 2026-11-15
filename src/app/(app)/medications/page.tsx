@@ -1,5 +1,6 @@
 "use client";
 
+import { PlayVoiceNote, RecordVoiceNote } from "@/components/MedicationVoice";
 import { useState, type FormEvent } from "react";
 import { DoseBadge } from "@/components/DoseStatus";
 import { Button } from "@/components/ui/Button";
@@ -177,6 +178,7 @@ function DoseRow({ dose, canConfirm, onConfirm, onUndo }: { dose: Dose; canConfi
         </div>
         <DoseBadge state={dose.state} />
       </div>
+      <PlayVoiceNote medication={dose.medication} autoPlay={canConfirm && dose.state === "due" && !dose.log} />
       {dose.state === "unconfirmed" ? <p className="text-sm text-ink-soft">{t("dose.unconfirmedHelp")}</p> : null}
       {canConfirm ? (
         dose.log ? (
@@ -293,6 +295,8 @@ export default function MedicationsPage() {
                     <p className="text-ink-soft">{[m.dose, m.times.map((time) => formatTime(time, locale)).join(", ")].filter(Boolean).join(" · ")}</p>
                     <p className="text-ink-soft">{describeFrequency(m, t, locale)}</p>
                     {m.notes ? <p>{m.notes}</p> : null}
+                    {m.voiceNote ? <PlayVoiceNote medication={m} /> : null}
+                    {canWrite ? <RecordVoiceNote medication={m} onSaved={data.reload} /> : null}
                     {canWrite ? (
                       <div className="flex flex-wrap gap-2">
                         <Button variant="secondary" icon="edit" onClick={() => setEditing(m)}>

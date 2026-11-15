@@ -14,6 +14,7 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { requestCompanionReply, requestCompanionVoice, type CompanionReply } from "@/lib/ai/companionClient";
 import { useSpeech } from "@/lib/ai/useSpeech";
+import { entriesForAi, useServerAi } from "@/lib/ai/serverAi";
 import { newId, toDateKey } from "@/lib/domain/dates";
 import type { MessageKey } from "@/lib/i18n";
 import type { CareSummary, Feeling } from "@/lib/types";
@@ -126,6 +127,8 @@ export default function CompanionPage() {
   // With Pookie's server, replies use the companion's own Cloud voice; Demo Mode uses the device voice.
   const language = prefs.language;
   const serverVoice = useCallback((text: string) => requestCompanionVoice(text, language), [language]);
+  const serverAi = useServerAi();
+  const aiReal = repo.mode === "firebase" || serverAi;
   const speech = useSpeech(locale, PERSONA_GENDER[persona], repo.mode === "firebase" ? serverVoice : undefined);
   const [messages, setMessages] = useState<Message[]>([]);
   const [thinking, setThinking] = useState(false);
@@ -197,6 +200,7 @@ export default function CompanionPage() {
         facts: selectFacts({ aiPersonalization: personalised, entries: lifebook.data ?? [] }),
         preferredName: personalised ? (elder?.preferredName ?? "") : "",
         persona,
+        entries: personalised ? entriesForAi(lifebook.data ?? []) : [],
       });
       // Ignore replies that arrive after the user paused, ended or sent again.
       if (requestRef.current !== requestId) return;
@@ -270,8 +274,8 @@ export default function CompanionPage() {
     <>
       <PageHeader title={t("talk.title")} subtitle={t("talk.subtitle")} />
 
-      <Notice tone={repo.mode === "demo" || fellBack ? "warn" : "neutral"}>
-        <p className="font-bold">{repo.mode === "demo" ? t("talk.modeDemo") : fellBack ? t("talk.modeFallback") : t("talk.modeGemini")}</p>
+      <Notice tone={!aiReal || fellBack ? "warn" : "neutral"}>
+        <p className="font-bold">{!aiReal ? t("talk.modeDemo") : fellBack ? t("talk.modeFallback") : t("talk.modeGemini")}</p>
         <p className="text-sm">{repo.mode === "firebase" ? t("talk.voiceEngineServer") : t("talk.voiceEngine")}</p>
       </Notice>
       {personalised ? null : (
@@ -285,6 +289,7 @@ export default function CompanionPage() {
       ) : live ? (
         <LiveVoicePanel
           companion={persona}
+          context={{ persona, preferredName: personalised ? (elder?.preferredName ?? "") : "", entries: personalised ? entriesForAi(lifebook.data ?? []) : [] }}
           onFallback={() => setLive(false)}
           onEnded={(turns) => {
             setLiveExchanges(turns);
@@ -302,7 +307,7 @@ export default function CompanionPage() {
           <Button size="lg" icon="chat" onClick={start}>
             {t("talk.start")}
           </Button>
-          {repo.mode === "firebase" ? (
+          {aiReal ? (
             <div className="space-y-1">
               <Button variant="secondary" icon="mic" onClick={() => setLive(true)}>
                 {t("live.start")}

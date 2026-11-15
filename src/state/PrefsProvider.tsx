@@ -13,9 +13,11 @@ export interface Prefs {
   textSize: TextSize;
   reduceMotion: boolean;
   voiceOutput: boolean;
+  /** One calm screen for later stages (Simple Mode). */
+  simpleMode: boolean;
 }
 
-export const DEFAULT_PREFS: Prefs = { language: "en", pookie: "sweet", companion: "pookie", textSize: "normal", reduceMotion: false, voiceOutput: true };
+export const DEFAULT_PREFS: Prefs = { language: "en", pookie: "sweet", companion: "pookie", textSize: "normal", reduceMotion: false, voiceOutput: true, simpleMode: false };
 
 interface PrefsContextValue {
   prefs: Prefs;

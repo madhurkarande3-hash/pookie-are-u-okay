@@ -94,3 +94,29 @@ test("schedules: a family proposal does nothing until the elder accepts it", asy
   await proposal.getByRole("button", { name: "Yes, accept" }).click();
   await expect(page.getByRole("listitem").filter({ hasText: "Video call with Priya" }).getByText("On", { exact: true })).toBeVisible();
 });
+
+test("care team: demo admin login shows the patient table", async ({ page }) => {
+  await page.goto("/admin");
+  await page.getByLabel("Email address").fill("care@demo.pookie");
+  await page.getByLabel("Password").fill("wrong");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByText("That email or password didn't work.")).toBeVisible();
+  await page.getByLabel("Password").fill("demo-care-team");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("rowheader", { name: /Asha/ })).toBeVisible();
+});
+
+test("health and emergency: hand-entered hospital, 112 and no automatic calls", async ({ page }) => {
+  await loadSample(page);
+  await page.goto("/health");
+  await expect(page.getByText("Entered by hand").first()).toBeVisible();
+  await page.goto("/emergency");
+  await expect(page.getByRole("link", { name: /Call 112/ })).toHaveAttribute("href", "tel:112");
+  await expect(page.getByText("Pookie never calls anyone by itself", { exact: false })).toBeVisible();
+});
+
+test("where am I: same calm answer, from approved data", async ({ page }) => {
+  await loadSample(page);
+  await page.getByRole("button", { name: "Where am I? What's today?" }).click();
+  await expect(page.getByText("You are Asha.")).toBeVisible();
+});

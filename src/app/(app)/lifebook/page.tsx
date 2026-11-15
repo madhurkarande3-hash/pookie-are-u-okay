@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { findConflicts } from "@shared/memoryConflicts";
 import { MediaView } from "@/components/MediaView";
+import { VoiceInput } from "@/components/VoiceInput";
 import { Button } from "@/components/ui/Button";
 import { Card, PageHeader, Section } from "@/components/ui/Card";
 import { Checkbox, Toggle } from "@/components/ui/Choice";
@@ -13,7 +14,7 @@ import { useAsyncData } from "@/hooks/useAsyncData";
 import { usePolicy } from "@/hooks/usePolicy";
 import { formatDate, newId } from "@/lib/domain/dates";
 import { searchEntries, withRevision, MAX_MEDIA_BYTES } from "@/lib/domain/lifebook";
-import { resizePhoto, useRecorder } from "@/lib/media";
+import { resizePhoto } from "@/lib/media";
 import { ValidationError, type LifebookCategory, type LifebookEntry } from "@/lib/types";
 import { usePrefs } from "@/state/PrefsProvider";
 import { useReadySession } from "@/state/SessionProvider";
@@ -61,39 +62,6 @@ function PhotoInput({ onPick, hasMedia }: { onPick: (blob: Blob | null) => void;
       {/* eslint-disable-next-line @next/next/no-img-element -- local preview of the resized photo */}
       {preview ? <img src={preview} alt="" className="max-h-60 rounded-2xl border border-line object-contain" /> : null}
       {error ? <p role="alert" className="font-bold text-danger">{describeError(error, t)}</p> : null}
-    </div>
-  );
-}
-
-function VoiceInput({ onRecorded }: { onRecorded: (blob: Blob | null) => void }) {
-  const { t } = usePrefs();
-  const recorder = useRecorder();
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (!recorder.blob) return undefined;
-    onRecorded(recorder.blob);
-    const next = URL.createObjectURL(recorder.blob);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- report each new recording once
-  }, [recorder.blob]);
-  if (recorder.state === "unsupported") return <p className="text-ink-soft">{t("life.noRecorder")}</p>;
-  return (
-    <div className="space-y-2">
-      {recorder.state === "recording" ? (
-        <Button variant="danger" icon="stop" onClick={recorder.stop}>
-          {t("life.stopRecording")}
-        </Button>
-      ) : (
-        <Button variant="secondary" icon="mic" onClick={() => void recorder.start()}>
-          {recorder.state === "done" ? t("life.recordAgain") : t("life.record")}
-        </Button>
-      )}
-      <p role="status" aria-live="polite" className="text-sm text-ink-soft">
-        {recorder.state === "recording" ? t("life.recordingNow", { seconds: recorder.seconds }) : t("life.recordHint")}
-      </p>
-      {recorder.state === "blocked" ? <p role="alert" className="font-bold text-danger">{t("life.micBlocked")}</p> : null}
-      {url ? <audio controls src={url} className="w-full" /> : null}
     </div>
   );
 }

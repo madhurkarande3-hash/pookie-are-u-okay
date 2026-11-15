@@ -1,4 +1,5 @@
 import type {
+  MedicalProfile,
   Appointment,
   CareSchedule,
   CareSummary,
@@ -35,6 +36,7 @@ export interface ExportBundle {
   schedules: CareSchedule[];
   summaries: CareSummary[];
   helpRequests: HelpRequest[];
+  medical?: MedicalProfile | null;
 }
 
 /**
@@ -51,7 +53,11 @@ export interface Repository {
 
   listCircle(elderId: string): Promise<CircleMember[]>;
   inviteMember(elderId: string, invite: InviteInput): Promise<CircleMember>;
-  updateMember(elderId: string, member: CircleMember, patch: Partial<Pick<CircleMember, "permissions" | "status">>): Promise<void>;
+  updateMember(
+    elderId: string,
+    member: CircleMember,
+    patch: Partial<Pick<CircleMember, "permissions" | "status">>,
+  ): Promise<void>;
   removeMember(elderId: string, member: CircleMember): Promise<void>;
 
   listMedications(elderId: string): Promise<Medication[]>;
@@ -73,7 +79,12 @@ export interface Repository {
   /** Members with view access see only memories the elder shared, plus anything they suggested. */
   listLifebook(elderId: string): Promise<LifebookEntry[]>;
   /** Stores a photo or voice recording for a memory. Real server: Cloud Storage. Demo: this browser. */
-  saveLifebookMedia(elderId: string, entryId: string, blob: Blob, kind: LifebookMedia["kind"]): Promise<LifebookMedia>;
+  saveLifebookMedia(
+    elderId: string,
+    entryId: string,
+    blob: Blob,
+    kind: LifebookMedia["kind"],
+  ): Promise<LifebookMedia>;
   /** A URL the browser can show or play. */
   lifebookMediaUrl(media: LifebookMedia): Promise<string>;
   saveLifebookEntry(elderId: string, entry: LifebookEntry): Promise<void>;
@@ -101,6 +112,10 @@ export interface Repository {
   acknowledgeHelpRequest(elderId: string, requestId: string): Promise<void>;
 
   /** Each person's own reminder preferences (timezone, quiet hours, kinds, channels). Null = never saved. */
+  /** Medical profile, hospitals, doctors and emergency contacts. Null = not set up. */
+  getMedical(elderId: string): Promise<MedicalProfile | null>;
+  saveMedical(elderId: string, profile: MedicalProfile): Promise<void>;
+
   getNotifyPrefs(uid: string): Promise<NotifyPrefs | null>;
   saveNotifyPrefs(uid: string, prefs: NotifyPrefs): Promise<void>;
 }

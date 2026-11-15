@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { DoseBadge } from "@/components/DoseStatus";
 import { HelpRequestsPanel } from "@/components/HelpRequest";
+import { FamilyDigest } from "@/components/FamilyDigest";
 import { ScheduleManager } from "@/components/ScheduleManager";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Card, PageHeader, Section } from "@/components/ui/Card";
@@ -199,6 +200,7 @@ export default function FamilyDashboardPage() {
 
       {allowed("help:read") ? (
         <Section title={t("family.help")} id="fam-help">
+          <FamilyDigest />
           <HelpRequestsPanel />
         </Section>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useServerAi } from "@/lib/ai/serverAi";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Language } from "@/lib/types";
@@ -14,7 +15,11 @@ const LANGUAGES: readonly Language[] = ["en", "hi"];
 export function LanguageSwitch() {
   const { prefs, setPrefs, t } = usePrefs();
   return (
-    <div role="group" aria-label={t("lang.label")} className="inline-flex rounded-pill border-2 border-primary-strong bg-surface p-0.5">
+    <div
+      role="group"
+      aria-label={t("lang.label")}
+      className="inline-flex rounded-pill border-2 border-primary-strong bg-surface p-0.5"
+    >
       {LANGUAGES.map((code) => {
         const active = prefs.language === code;
         return (
@@ -38,7 +43,11 @@ export function TopBar({ homeHref = "/" }: { homeHref?: string }) {
   const { t } = usePrefs();
   return (
     <header className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-3">
-      <Link href={homeHref} className="flex items-center gap-2 text-2xl font-extrabold text-primary-strong" aria-label={t("nav.homeLink")}>
+      <Link
+        href={homeHref}
+        className="flex items-center gap-2 text-2xl font-extrabold text-primary-strong"
+        aria-label={t("nav.homeLink")}
+      >
         <Icon name="heart" className="h-7 w-7" />
         <span>Pookie</span>
       </Link>
@@ -52,16 +61,26 @@ export function DemoBanner() {
   const { t } = usePrefs();
   const { mode, session, demo } = useSession();
   const router = useRouter();
+  const serverAi = useServerAi();
   if (mode !== "demo") return null;
-  const viewingAs = session.status === "ready" && session.actor.role !== "elder" ? session.actor.name : null;
+  const viewingAs =
+    session.status === "ready" && session.actor.role !== "elder"
+      ? session.actor.name
+      : null;
   return (
-    <div className="border-b-2 border-warn bg-surface px-4 py-2 text-center text-sm font-bold text-warn" role="note">
-      <span>{t("demo.banner")}</span>
+    <div
+      className="border-b-2 border-warn bg-surface px-4 py-2 text-center text-sm font-bold text-warn"
+      role="note"
+    >
+      <span>{serverAi ? t("demo.bannerAi") : t("demo.banner")}</span>
       {viewingAs && demo ? (
         <>
           {" "}
           <span>{t("demo.viewingAs", { name: viewingAs })}</span>{" "}
-          <button type="button" className="underline underline-offset-4" onClick={() => {
+          <button
+            type="button"
+            className="underline underline-offset-4"
+            onClick={() => {
               demo.setPersona("elder");
               router.push("/home");
             }}

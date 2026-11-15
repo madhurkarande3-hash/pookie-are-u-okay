@@ -38,6 +38,25 @@ The Care Circle screen has **Demo: view as …** buttons, so you can see exactly
 
 **One file to share:** `npm run build:single` builds the entire Demo app into `web-single/dist/index.html`, which runs anywhere, even straight from disk. A prebuilt copy is in [`demo/pookie-demo.html`](demo/pookie-demo.html). Inside sandboxed viewers the microphone and downloads may be blocked; typing works.
 
+## Deploy on Vercel with real AI (5 minutes, no Firebase needed)
+
+1. Push this repo to GitHub, then on vercel.com choose **Add New → Project** and import it. The defaults are correct (Next.js).
+2. In **Project → Settings → Environment Variables** add `GEMINI_API_KEY` (from [Google AI Studio](https://aistudio.google.com/apikey)). Optionally add `GEMINI_MODEL` and `LIVE_MODEL`.
+3. Redeploy. The companion now replies with Gemini through this app's own server routes (`/api/companion`, `/api/live-token`), and **Talk in real time** (Gemini Live) appears. The key never reaches the browser. Each visitor is rate-limited, and the banner says that replies come from Gemini.
+
+In this mode, everyone's data stays in their own browser. For accounts, a shared Care Circle across devices, and push reminders, add the Firebase settings below. Without `GEMINI_API_KEY`, the app runs as the labelled Demo with scripted replies.
+
+### AI providers and fallback
+
+Text replies go through one server-side manager (`src/lib/server/ai`). Default order:
+**Adaption Labs → Gemini → OpenAI → Groq → OpenRouter**, using only providers whose key *and*
+model are set (see `.env.example`). Each request has a timeout and one bounded retry for rate
+limits, 5xx and timeouts; auth errors move straight to the next provider. Users only ever see a
+friendly "try again"; logs carry the provider name and an error category, never keys or messages.
+LifeBook facts go only to the providers in `AI_LIFEBOOK_PROVIDERS` (default Adaption and Gemini).
+Voice: Gemini Live when `GEMINI_API_KEY` is set, otherwise browser speech recognition + the text
+manager + browser speech synthesis. Set `ADMIN_DIAGNOSTICS_TOKEN` to test providers from `/admin`.
+
 ## Run it for real (Firebase + Gemini)
 
 1. **Create a Firebase project on the Blaze plan.** Enable Authentication (Email/Password, Google), Firestore, Storage and App Hosting. Enabling Cloud Functions also enables Cloud Scheduler. Then enable the **Cloud Text-to-Speech API** in Google Cloud.

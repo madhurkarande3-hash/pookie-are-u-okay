@@ -1,5 +1,7 @@
 import type { ChatTurn, CompanionFact, CompanionLanguage } from "@shared/companionContext";
 import type { CompanionPersona } from "@shared/persona";
+import type { CompanionEntry } from "@shared/companionContext";
+import { deviceTimeZone, serverAiAvailable } from "./serverAi";
 import { demoReply } from "./demoCompanion";
 
 export interface CompanionReply {
@@ -19,6 +21,8 @@ export interface CompanionRequest {
   preferredName: string;
   /** Used only for scripted replies; the Cloud Function reads the persona from the stored profile. */
   persona: CompanionPersona;
+  /** Browser-stored mode with server AI: the elder's approved memories, sent to this app's own server. */
+  entries?: readonly CompanionEntry[];
 }
 
 const SCRIPTED_DELAY_MS = 600;
@@ -41,8 +45,23 @@ function scripted(request: CompanionRequest, fellBack: boolean): CompanionReply 
  */
 export async function requestCompanionReply(request: CompanionRequest): Promise<CompanionReply> {
   if (request.mode === "demo") {
-    await wait(SCRIPTED_DELAY_MS);
-    return scripted(request, false);
+    if (!(await serverAiAvailable())) {
+      await wait(SCRIPTED_DELAY_MS);
+      return scripted(request, false);
+    }
+    try {
+      const res = await fetch("/api/companion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: request.turns, language: request.language, persona: request.persona, preferredName: request.preferredName, entries: request.entries ?? [], timeZone: deviceTimeZone() }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as { text?: string };
+      if (!data.text) throw new Error("empty");
+      return { text: data.text, source: "gemini", fellBack: false };
+    } catch {
+      return scripted(request, true);
+    }
   }
   try {
     const [{ httpsCallable }, { getFirebase }] = await Promise.all([import("firebase/functions"), import("@/lib/firebase/client")]);

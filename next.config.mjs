@@ -11,7 +11,7 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           // Microphone is needed for the voice companion; everything else stays off.
-          { key: "Permissions-Policy", value: "microphone=(self), camera=(), geolocation=()" },
+          { key: "Permissions-Policy", value: "microphone=(self), camera=(), geolocation=(self)" },
         ],
       },
     ];
