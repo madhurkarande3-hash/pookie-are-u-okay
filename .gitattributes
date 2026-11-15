@@ -1,0 +1,13 @@
+# Normalise line endings: LF in the repo and on checkout, on every OS
+* text=auto eol=lf
+
+# Build output and lockfiles: hide from GitHub language stats and collapse in diffs
+demo/pookie-demo.html linguist-generated=true -diff
+package-lock.json linguist-generated=true
+functions/package-lock.json linguist-generated=true
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff2 binary

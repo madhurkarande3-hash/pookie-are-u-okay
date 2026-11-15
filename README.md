@@ -1,21 +1,56 @@
-# Pookie — A little care, a lot of love
+<div align="center">
 
-An AI companion and care app for older adults, built for independence and dignity. It offers:
+<img src="src/app/icon.svg" alt="Pookie logo" width="96" height="96" />
 
-- a friendly companion to talk to, by voice or text, in English and Hindi
-- medicine, appointment and check-in reminders that never treat silence as a missed dose or an emergency
-- a Care Circle of family and caregivers who see only what the elder allows
-- **LifeBook**, a personal memory library (people, stories, places, photos, voice memories) that helps people living with Alzheimer's, without ever inventing a memory
+# Pookie: are u okay?
 
-Built with Next.js 14, React 18, strict TypeScript and Tailwind CSS. The backend uses Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions (v2), Cloud Scheduler, Firebase Cloud Messaging, App Check, Google Cloud Text-to-Speech, the Gemini API and the Gemini Live API.
+**A little care, a lot of love.** Pookie is an AI companion and care app for older adults, built for independence and dignity.
 
-| | |
+[![CI](https://github.com/madhurkarande3-hash/pookie-are-u-okay/actions/workflows/ci.yml/badge.svg)](https://github.com/madhurkarande3-hash/pookie-are-u-okay/actions/workflows/ci.yml)
+![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=nextdotjs)
+![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Firestore%20%C2%B7%20Functions-FFCA28?logo=firebase&logoColor=black)
+![Gemini](https://img.shields.io/badge/Gemini-API%20%2B%20Live-8E75B2?logo=googlegemini&logoColor=white)
+![WCAG 2.1 AA](https://img.shields.io/badge/axe-WCAG%202.1%20AA-2E7D32)
+![English · हिन्दी](https://img.shields.io/badge/i18n-English%20%C2%B7%20%E0%A4%B9%E0%A4%BF%E0%A4%A8%E0%A5%8D%E0%A4%A6%E0%A5%80-FF7A59)
+
+[Try the demo](#try-it-in-one-minute-demo-mode-no-keys) · [6-minute walkthrough](docs/DEMO.md) · [Architecture](docs/ARCHITECTURE.md) · [Security & privacy](docs/SECURITY.md) · [Status](docs/AUDIT.md)
+
+</div>
+
+---
+
+## What Pookie does
+
+| | Feature | What it means for the elder |
+|---|---|---|
+| 💬 | **Companion** | A friendly companion to talk to by voice or text, in English and Hindi. Choose Pookie, Granny Pookie or Kaka Pookie. |
+| 💊 | **Medicines & appointments** | Reminders that never treat silence as a missed dose. "Missed" is recorded only when the elder says so. |
+| 🌤️ | **Check-ins** | Mood, sleep and energy. A missed check-in means "no response", never an emergency. |
+| 👨‍👩‍👧 | **Care Circle** | Family and caregivers see only what the elder allows, person by person and item by item. Sharing can be paused at any time. |
+| 📖 | **LifeBook** | A personal memory library (people, stories, places, photos, voice memories) that helps people living with Alzheimer's. Pookie never invents a memory. |
+| 🆘 | **"I'd like some help"** | Help is sent only when the elder presses the button. |
+
+## Principles
+
+These rules are enforced in code, security rules and tests, not only in the UI:
+
+- **The elder decides.** Family can propose; only the elder accepts, changes or pauses.
+- **Private unless shared.** Each check-in, note, visit and memory is shared one at a time.
+- **No guessing.** The AI uses only confirmed memories, cites them, asks when unsure and flags conflicting facts.
+- **No diagnosis.** Pookie is a companion, not a medical device.
+- **Discreet.** Lock-screen notifications never show medicine names or doctors.
+- **Honest Demo Mode.** Scripted replies are labelled "scripted, not AI", and nothing is sent.
+
+## Tech stack
+
+| Layer | Built with |
 |---|---|
-| **Judges** | [docs/DEMO.md](docs/DEMO.md): a 6-minute walkthrough |
-| **Architecture** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): data model, APIs, how each rule is enforced |
-| **Security & privacy** | [docs/SECURITY.md](docs/SECURITY.md): threat model, controls, DPDP Act review (no compliance claim) |
-| **Status** | [docs/AUDIT.md](docs/AUDIT.md): what is done, verified, and still open |
-| **History** | [CHANGELOG.md](CHANGELOG.md) |
+| Web app | Next.js 14 (App Router), React 18, strict TypeScript, Tailwind CSS |
+| Data & auth | Firebase Authentication, Cloud Firestore, Cloud Storage, App Check |
+| Server | Cloud Functions v2 (`asia-south1`), Cloud Scheduler, Firebase Cloud Messaging |
+| AI & voice | Gemini API, Gemini Live API, Google Cloud Text-to-Speech |
+| Quality | Vitest, Firestore rules emulator tests, Playwright and axe, GitHub Actions |
 
 ---
 
@@ -39,6 +74,9 @@ The Care Circle screen has **Demo: view as …** buttons, so you can see exactly
 **One file to share:** `npm run build:single` builds the entire Demo app into `web-single/dist/index.html`, which runs anywhere, even straight from disk. A prebuilt copy is in [`demo/pookie-demo.html`](demo/pookie-demo.html). Inside sandboxed viewers the microphone and downloads may be blocked; typing works.
 
 ## Run it for real (Firebase + Gemini)
+
+<details>
+<summary><b>Full setup: Firebase project, secrets, deploy</b></summary>
 
 1. **Create a Firebase project on the Blaze plan.** Enable Authentication (Email/Password, Google), Firestore, Storage and App Hosting. Enabling Cloud Functions also enables Cloud Scheduler. Then enable the **Cloud Text-to-Speech API** in Google Cloud.
 2. **Web config:** `cp .env.example .env.local` and fill in the `NEXT_PUBLIC_FIREBASE_*` values. These are public by design; access is enforced by `firestore.rules` and `storage.rules`.
@@ -66,18 +104,20 @@ The Care Circle screen has **Demo: view as …** buttons, so you can see exactly
 
 Every function runs in `asia-south1`. Firestore triggers must be in the same region as the database, so change `REGION` in `functions/src/*` if yours differs.
 
-### Local emulators
+**Local emulators**
 
 ```bash
 NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true   # in .env.local
 npm run emulators                         # auth 9099 · firestore 8080 · functions 5001 · storage 9199
 ```
 
-### Restoring a backup
+**Restoring a backup**
 
 ```bash
 gcloud firestore import gs://<BACKUP_BUCKET>/<YYYY-MM-DD>
 ```
+
+</details>
 
 ## Scripts
 
@@ -86,13 +126,13 @@ gcloud firestore import gs://<BACKUP_BUCKET>/<YYYY-MM-DD>
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run build:single` | One self-contained HTML file of the Demo app |
 | `npm run typecheck` / `lint` | Strict TypeScript (`noUncheckedIndexedAccess`) / ESLint |
-| `npm test` | 109 unit tests (Vitest) |
+| `npm test` | 112 unit tests (Vitest) |
 | `npm run test:rules` | Firestore security-rules tests on the emulator (Java 11+) |
-| `npm run test:e2e` | 22 Playwright end-to-end and axe accessibility checks (phone + desktop) |
+| `npm run test:e2e` | Playwright end-to-end and axe accessibility checks (phone + desktop) |
 | `npm run test:all` | Typecheck, unit tests and rules tests |
 | `npm run deploy` | Deploy Firestore rules/indexes and functions |
 
-CI (`.github/workflows/ci.yml`) runs all of these on every push.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs all of these on every push and pull request.
 
 ## Project structure
 
@@ -126,6 +166,8 @@ tests/                    Unit tests · tests/rules (emulator) · tests/e2e (Pla
 firestore.rules · storage.rules · firestore.indexes.json · firebase.json · apphosting.yaml
 ```
 
+Working on this repo with an AI coding agent? Start with [AGENTS.md](AGENTS.md).
+
 ## Known limitations
 
 - **Not yet run against live services.** Gemini, Gemini Live, Cloud TTS, FCM, Scheduler and email are implemented and type-checked against the real SDKs, but they have not been run against real credentials. The build environment has no project. Run `npm run test:rules` and the smoke checks in [docs/DEMO.md](docs/DEMO.md) after the first deploy.
@@ -135,4 +177,5 @@ firestore.rules · storage.rules · firestore.indexes.json · firebase.json · a
 - **Google Calendar sync** for appointments is not built.
 - **No formal clinical or legal review.** Pookie is a companion, not a medical device. The DPDP review in docs/SECURITY.md is a self-assessment, not a compliance claim.
 
-Pookie does not diagnose or treat any condition, including Alzheimer's. In an emergency, call your local emergency number (112 in India).
+> [!IMPORTANT]
+> Pookie does not diagnose or treat any condition, including Alzheimer's. In an emergency, call your local emergency number (112 in India).
