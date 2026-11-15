@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Pookie — A little care, a lot of love",
     short_name: "Pookie",
-    description: "A gentle companion for older adults: check-ins, medicine reminders, a Care Circle and a LifeBook of memories.",
+    description: "A gentle companion for older adults: check-ins, medicine reminders, Apne Log and a LifeBook of memories.",
     start_url: "/",
     display: "standalone",
     background_color: THEMES.sweet.bg,

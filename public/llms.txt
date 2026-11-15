@@ -8,7 +8,7 @@
 - Doctor appointments with preparation notes, history, and "Add to my calendar" (.ics).
 - Reminder history: what Pookie reminded the person about.
 - LifeBook of approved memories; the AI companion only talks about approved facts and says when it doesn't know.
-- Care Circle: family members see only what the elder grants, and the elder can pause sharing at any time.
+- Apne Log: family members see only what the elder grants, and the elder can pause sharing at any time.
 - Health hub, emergency contacts, a simplified mode, and a care-team dashboard for clinics.
 
 ## Privacy

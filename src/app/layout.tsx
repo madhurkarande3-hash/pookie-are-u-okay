@@ -8,7 +8,7 @@ import { PREFS_STORAGE_KEY, THEMES, themeCss } from "@/lib/theme/tokens";
 import { PrefsProvider } from "@/state/PrefsProvider";
 import { SessionProvider } from "@/state/SessionProvider";
 
-const DESCRIPTION = "A gentle companion for older adults: friendly check-ins, medicine reminders, a Care Circle you control, and a LifeBook of your own memories.";
+const DESCRIPTION = "A gentle companion for older adults: friendly check-ins, medicine reminders, Apne Log you control, and a LifeBook of your own memories.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://pookie-are-u-okay.vercel.app"),

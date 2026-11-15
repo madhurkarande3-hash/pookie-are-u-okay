@@ -24,8 +24,8 @@ export const emailInvitation = onDocumentCreated({ document: "elders/{elderId}/i
       .create({
         to: invite.email,
         message: {
-          subject: `${who} invited you to their Pookie Care Circle`,
-          text: `${who} would like you in their Pookie Care Circle. Sign in at ${link} with this email address (${invite.email}) to accept or decline. You will only see what ${who} chooses to share.`,
+          subject: `${who} invited you to Apne Log`,
+          text: `${who} would like you in Apne Log. Sign in at ${link} with this email address (${invite.email}) to accept or decline. You will only see what ${who} chooses to share.`,
         },
       });
   } catch (err) {

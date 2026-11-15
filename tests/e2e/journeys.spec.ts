@@ -64,7 +64,7 @@ test("help: only the elder asks, and the helper can reply", async ({ page }) => 
   await loadSample(page);
   await page.getByRole("button", { name: "I'd like some help" }).click();
   await page.getByLabel(/Anything you want to say/).fill("Can someone call me?");
-  await page.getByRole("button", { name: "Send to my Care Circle" }).click();
+  await page.getByRole("button", { name: "Send to Apne Log" }).click();
   await expect(page.getByText("Sent — waiting for a reply")).toBeVisible();
   await page.goto("/circle");
   await page.getByRole("button", { name: "See the app as Priya" }).click();
@@ -76,7 +76,7 @@ test("help: only the elder asks, and the helper can reply", async ({ page }) => 
 test("LifeBook: family suggestions wait for approval; conflicts are flagged, not guessed", async ({ page }) => {
   await loadSample(page);
   await page.goto("/lifebook");
-  await expect(page.getByText("Suggested by your Care Circle")).toBeVisible();
+  await expect(page.getByText("Suggested by Apne Log")).toBeVisible();
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByLabel("Name").fill("Priya");
   await page.getByLabel("How are they related to you?").fill("niece");
