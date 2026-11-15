@@ -1,157 +1,319 @@
-# Pookie — A little care, a lot of love
+# ✨ POOKIE
+### A little care, a lot of love.
 
-An AI companion and care app for older adults, built for independence and dignity. It offers:
+<p align="center">
+  <strong>Technology that remembers the person, not just the routine.</strong>
+</p>
 
-- a friendly companion to talk to, by voice or text, in English and Hindi
-- medicine, appointment and check-in reminders that never treat silence as a missed dose or an emergency
-- a Care Circle of family and caregivers who see only what the elder allows
-- **LifeBook**, a personal memory library (people, stories, places, photos, voice memories) that helps people living with Alzheimer's, without ever inventing a memory
+Pookie is an AI-powered elderly care and companionship platform designed to make everyday care more accessible, personal and connected.
 
-Built with Next.js 14, React 18, strict TypeScript and Tailwind CSS. The backend uses Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions (v2), Cloud Scheduler, Firebase Cloud Messaging, App Check, Google Cloud Text-to-Speech, the Gemini API and the Gemini Live API.
+We believe that growing older should never mean losing independence, identity or the feeling of being connected to the people who matter.
 
-| | |
-|---|---|
-| **Judges** | [docs/DEMO.md](docs/DEMO.md): a 6-minute walkthrough |
-| **Architecture** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): data model, APIs, how each rule is enforced |
-| **Security & privacy** | [docs/SECURITY.md](docs/SECURITY.md): threat model, controls, DPDP Act review (no compliance claim) |
-| **Status** | [docs/AUDIT.md](docs/AUDIT.md): what is done, verified, and still open |
-| **History** | [CHANGELOG.md](CHANGELOG.md) |
+Pookie brings together personal companionship, healthcare routines, family coordination and memory preservation in one accessible experience.
+
+**Not just another reminder application. Not just another chatbot.**
+
+A companion, a personal memory library and a connected care circle — built around the dignity of the older adult.
 
 ---
 
-## Try it in one minute (Demo Mode, no keys)
+## 🌷 Why Pookie?
 
-```bash
-npm install
-npm run dev            # http://localhost:3000
-```
+An elderly person may need help remembering a medicine, preparing for a doctor's appointment or staying connected with family.
 
-On the welcome screen, choose **Explore with sample data** to load Asha, a fictional elder, with her Care Circle. Or tap **Get started** to set up from scratch.
+But care is about more than completing tasks.
 
-Demo Mode is honest about what it is:
-- a banner on every screen says Demo Mode
-- data stays in this browser
-- companion replies are labelled "scripted, not AI"
-- no email or push is sent or faked
+It is also about familiar voices, personal stories, meaningful conversations and the comfort of knowing that someone is there.
 
-The Care Circle screen has **Demo: view as …** buttons, so you can see exactly what each family member or caregiver sees. Demo Mode applies the same permission rules as the backend.
+Most digital healthcare tools focus on tracking what a person needs to do.
 
-**One file to share:** `npm run build:single` builds the entire Demo app into `web-single/dist/index.html`, which runs anywhere, even straight from disk. A prebuilt copy is in [`demo/pookie-demo.html`](demo/pookie-demo.html). Inside sandboxed viewers the microphone and downloads may be blocked; typing works.
+Pookie also focuses on the person behind those routines.
 
-## Deploy on Vercel with real AI (5 minutes, no Firebase needed)
+## 💗 Meet Pookie
 
-1. Push this repo to GitHub, then on vercel.com choose **Add New → Project** and import it. The defaults are correct (Next.js).
-2. In **Project → Settings → Environment Variables** add `GEMINI_API_KEY` (from [Google AI Studio](https://aistudio.google.com/apikey)). Optionally add `GEMINI_MODEL` and `LIVE_MODEL`.
-3. Redeploy. The companion now replies with Gemini through this app's own server routes (`/api/companion`, `/api/live-token`), and **Talk in real time** (Gemini Live) appears. The key never reaches the browser. Each visitor is rate-limited, and the banner says that replies come from Gemini.
+### 🗣️ A companion who listens
 
-In this mode, everyone's data stays in their own browser. For accounts, a shared Care Circle across devices, and push reminders, add the Firebase settings below. Without `GEMINI_API_KEY`, the app runs as the labelled Demo with scripted replies.
+A friendly AI companion designed for everyday conversations.
 
-### AI providers and fallback
+- Voice and text interaction.
+- English and Hindi support.
+- Personalised companion experiences.
+- Accessible interaction and simple controls.
+- LifeBook-based personalisation with explicit consent.
 
-Text replies go through one server-side manager (`src/lib/server/ai`). Default order:
-**Adaption Labs → Gemini → OpenAI → Groq → OpenRouter**, using only providers whose key *and*
-model are set (see `.env.example`). Each request has a timeout and one bounded retry for rate
-limits, 5xx and timeouts; auth errors move straight to the next provider. Users only ever see a
-friendly "try again"; logs carry the provider name and an error category, never keys or messages.
-LifeBook facts go only to the providers in `AI_LIFEBOOK_PROVIDERS` (default Adaption and Gemini).
-Voice: Gemini Live when `GEMINI_API_KEY` is set, otherwise browser speech recognition + the text
-manager + browser speech synthesis. Set `ADMIN_DIAGNOSTICS_TOKEN` to test providers from `/admin`.
+Pookie is designed to support companionship, not replace human relationships or professional care.
 
-## Run it for real (Firebase + Gemini)
+### 📖 LifeBook — A life worth remembering
 
-1. **Create a Firebase project on the Blaze plan.** Enable Authentication (Email/Password, Google), Firestore, Storage and App Hosting. Enabling Cloud Functions also enables Cloud Scheduler. Then enable the **Cloud Text-to-Speech API** in Google Cloud.
-2. **Web config:** `cp .env.example .env.local` and fill in the `NEXT_PUBLIC_FIREBASE_*` values. These are public by design; access is enforced by `firestore.rules` and `storage.rules`.
-3. **Project:** `cp .firebaserc.example .firebaserc` and set your project id.
-4. **Secrets (server only):**
-   ```bash
-   npx firebase functions:secrets:set GEMINI_API_KEY
-   ```
-5. **Function settings:** `cp functions/.env.example functions/.env` and set `APP_URL` and, optionally, `EMAIL_ENABLED`, `BACKUP_BUCKET` and `ENFORCE_APP_CHECK`.
-6. **Deploy the backend:**
-   ```bash
-   npm --prefix functions install
-   npx firebase deploy --only firestore,storage,functions
-   ```
-7. **Deploy the web app with Firebase App Hosting:** `npx firebase apphosting:backends:create`, then point it at this repo. `apphosting.yaml` lists every variable.
-8. **Optional features:**
-   - **Web push:** add `NEXT_PUBLIC_FIREBASE_VAPID_KEY` (Cloud Messaging → Web configuration).
-   - **App Check:** add a reCAPTCHA Enterprise key in `NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY`, then set `ENFORCE_APP_CHECK=true`.
-   - **Email:** install the **Trigger Email** extension and set `EMAIL_ENABLED=true`.
-   - **Backups:** set `BACKUP_BUCKET` and give the functions' service account the "Cloud Datastore Import Export Admin" role.
-9. **Demo accounts for judges (fictional):**
-   ```bash
-   cd functions && DEMO_PASSWORD='…' GCLOUD_PROJECT=<id> node scripts/seed-demo.mjs
-   ```
+LifeBook is Pookie's signature feature.
 
-Every function runs in `asia-south1`. Firestore triggers must be in the same region as the database, so change `REGION` in `functions/src/*` if yours differs.
+It is a personal memory library where an older adult can preserve:
 
-### Local emulators
+- Important people and relationships.
+- Personal stories and life experiences.
+- Favourite places and meaningful events.
+- Photographs and voice memories.
+- Everyday routines and preferences.
+- Milestones and moments worth remembering.
 
-```bash
-NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true   # in .env.local
-npm run emulators                         # auth 9099 · firestore 8080 · functions 5001 · storage 9199
-```
+With permission, Pookie can use confirmed and approved LifeBook entries to make conversations more familiar and meaningful.
 
-### Restoring a backup
+Memories are attributed and can be reviewed or corrected. When information is uncertain or missing, Pookie should acknowledge that rather than inventing a memory.
 
-```bash
-gcloud firestore import gs://<BACKUP_BUCKET>/<YYYY-MM-DD>
-```
+**Because a person's identity is worth preserving.**
 
-## Scripts
+### 💊 Everyday healthcare, made simpler
 
-| Command | What it does |
+A connected space for everyday healthcare routines.
+
+- Medication schedules.
+- Dose tracking.
+- Taken, explicitly missed and unconfirmed states.
+- Medical profile information.
+- Medical documents.
+- Visit records and follow-up information.
+- Doctor appointment management.
+- Emergency contacts.
+
+Pookie does not recommend medication changes or replace medical professionals.
+
+### 👨‍👩‍👧 The Care Circle
+
+Care should be collaborative without taking away independence.
+
+The Care Circle connects older adults with trusted family members and caregivers.
+
+- Individual member permissions.
+- Family and caregiver invitations.
+- Shared healthcare information where authorised.
+- Family suggestions for memories and routines.
+- Ability to pause or revoke sharing.
+- Elder-controlled decisions.
+
+The older adult remains at the centre of the system.
+
+### 🏡 Alzheimer's-friendly experiences
+
+Pookie includes supportive features designed with cognitive accessibility in mind.
+
+- Simple Mode.
+- Orientation assistance.
+- Familiar personal memories.
+- Family voice reminders.
+- Familiar photographs and stories.
+- Gentle daily routines.
+
+These features are intended to support familiarity and everyday interaction. They are not a treatment, diagnosis or clinical assessment for Alzheimer's disease.
+
+### 🆘 Emergency assistance
+
+Pookie provides an accessible emergency experience with:
+
+- Emergency contact information.
+- Preferred healthcare information.
+- A user-initiated emergency call action.
+- Location access only when explicitly requested.
+
+For India, the emergency number is 112.
+
+---
+
+## ⭐ What makes Pookie different?
+
+| Traditional reminder apps | Pookie |
 |---|---|
-| `npm run dev` / `build` / `start` | Next.js |
-| `npm run build:single` | One self-contained HTML file of the Demo app |
-| `npm run typecheck` / `lint` | Strict TypeScript (`noUncheckedIndexedAccess`) / ESLint |
-| `npm test` | 109 unit tests (Vitest) |
-| `npm run test:rules` | Firestore security-rules tests on the emulator (Java 11+) |
-| `npm run test:e2e` | 22 Playwright end-to-end and axe accessibility checks (phone + desktop) |
-| `npm run test:all` | Typecheck, unit tests and rules tests |
-| `npm run deploy` | Deploy Firestore rules/indexes and functions |
+| Focus on completing tasks | Focus on the person and their routines |
+| Basic medication notifications | Medication tracking and healthcare coordination |
+| Limited personal context | LifeBook memory library |
+| Generic chatbot interaction | Consent-based personalisation |
+| Basic family sharing | Permission-based Care Circle |
+| Standard interface | Elder-friendly accessibility experiences |
+| Isolated healthcare records | Connected care experience |
 
-CI (`.github/workflows/ci.yml`) runs all of these on every push.
+Pookie combines practical care with personal connection.
 
-## Project structure
+Our central idea is simple:
 
+**Care is not just remembering what someone needs. It is remembering who they are.**
+
+---
+
+## 🎨 Designed for people, not just screens
+
+Pookie offers a calm, approachable interface with:
+
+- Sweet and Cool visual themes.
+- Adjustable text sizes.
+- Reduced motion preferences.
+- English and Hindi.
+- Simple Mode.
+- Voice interaction.
+- Clear, accessible navigation.
+- Responsive web design.
+
+The visual experience is designed to feel friendly without making older adults feel infantilised.
+
+---
+
+## 🧠 AI and personalisation
+
+Pookie uses a server-side AI architecture.
+
+The application includes integration paths for:
+
+- Google Gemini.
+- Gemini Live.
+- OpenAI-compatible providers.
+- Adaption Labs.
+- Groq.
+- OpenRouter.
+
+Provider configuration, fallback behaviour and personal-memory restrictions are handled server-side.
+
+LifeBook information should only be sent to explicitly permitted providers and only when the user has enabled personalisation.
+
+AI responses are not medical advice.
+
+Provider availability and compatibility depend on valid credentials, configuration and live verification.
+
+---
+
+## 🛠️ Technology stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14, React 18 |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Authentication | Firebase Authentication |
+| Database | Cloud Firestore |
+| File storage | Firebase Cloud Storage |
+| Backend | Firebase Cloud Functions v2 |
+| Scheduling | Cloud Scheduler |
+| Notifications | Firebase Cloud Messaging |
+| AI | Google Gemini API and Gemini Live API |
+| Voice | Google Cloud Text-to-Speech |
+| Deployment | Vercel / Firebase deployment configuration |
+| Testing | Vitest, Playwright, axe accessibility checks |
+
+---
+
+## 🚀 Try Pookie
+
+### Demo Mode
+
+Pookie can be explored without Firebase credentials or AI API keys.
+
+```bash
+git clone https://github.com/madhurkarande3-hash/pookie-are-u-okay.git
+
+cd pookie-are-u-okay
+
+npm install
+
+npm run dev
 ```
-src/
-  app/                    Next.js App Router pages
-    page.tsx              Welcome (+ sample data in Demo Mode)
-    privacy/              "What Pookie keeps, and who sees it"
-    onboarding/           pookie (look + companion) · profile · circle · consent
-    (app)/                home · companion · checkin · medications · appointments
-                          lifebook · family · circle · settings
-  components/             Feature components; components/ui = design-system primitives
-  hooks/                  useAsyncData, usePolicy, useReminders, usePushReminders
-  lib/
-    domain/               Pure business logic: permissions, medication, schedule, lifebook, validation
-    data/                 Repository interface; Demo (localStorage) + Firebase implementations; sample data
-    ai/                   Companion client, scripted Demo replies, voices, Gemini Live client
-    firebase/             Config, client (App Check), auth, messaging
-    i18n/                 en.ts defines the keys; hi.ts must match (enforced by a test)
-    theme/tokens.ts       Design tokens → CSS variables
-  state/                  PrefsProvider (look, companion, language, text size, motion), SessionProvider
-functions/
-  src/index.ts            companionReply, speak, liveToken, notify*, deleteMyAccount
-  src/reminders.ts        reminderSweep (Scheduler) + web push / email delivery
-  src/audit.ts            Audit-log triggers
-  src/backup.ts           nightlyBackup · src/invites.ts emailInvitation
-  src/shared/             Pure modules shared with the web app (and unit-tested)
-  scripts/seed-demo.mjs   Fictional demo accounts
-web-single/               One-file Demo build (Vite) with hash routing
-tests/                    Unit tests · tests/rules (emulator) · tests/e2e (Playwright)
-firestore.rules · storage.rules · firestore.indexes.json · firebase.json · apphosting.yaml
+
+Open:
+
+```text
+http://localhost:3000
 ```
 
-## Known limitations
+Choose **Explore with sample data**.
 
-- **Not yet run against live services.** Gemini, Gemini Live, Cloud TTS, FCM, Scheduler and email are implemented and type-checked against the real SDKs, but they have not been run against real credentials. The build environment has no project. Run `npm run test:rules` and the smoke checks in [docs/DEMO.md](docs/DEMO.md) after the first deploy.
-- **Gemini Live is a preview.** It depends on the live model name in `LIVE_MODEL` and the browser's audio support. If it can't connect, the app falls back to the standard voice mode.
-- **Voice in Demo Mode** uses the device's built-in voices, so Kaka may sound like a pitched-down female voice on phones that have only one Hindi voice. The real-server mode uses Cloud TTS voices.
-- **Push needs extra setup.** Web push needs a VAPID key and a supported browser. On iPhone it needs iOS 16.4+ with Pookie added to the Home Screen.
-- **Two-way Google Calendar sync** is not built. Each upcoming visit has "Add to my calendar", which downloads an .ics file for Google, Apple or Outlook calendars.
-- **No formal clinical or legal review.** Pookie is a companion, not a medical device. The DPDP review in docs/SECURITY.md is a self-assessment, not a compliance claim.
+Demo Mode:
+- Uses fictional sample data.
+- Stores demo information in the browser.
+- Uses scripted companion replies.
+- Clearly identifies itself as Demo Mode.
+- Does not send real email or push notifications.
 
-Pookie does not diagnose or treat any condition, including Alzheimer's. In an emergency, call your local emergency number (112 in India).
+### Single-file demo
+
+```bash
+npm run build:single
+```
+
+The generated application is available under:
+
+```text
+web-single/dist/index.html
+```
+
+A prebuilt demo is also available in:
+
+```text
+demo/pookie-demo.html
+```
+
+---
+
+## 🔐 Privacy, safety and consent
+
+Pookie handles sensitive personal and healthcare information. Privacy is a core product requirement.
+
+Our principles:
+
+1. The older adult remains in control of personal information.
+2. Care Circle access is permission-based.
+3. Personal memories are never intentionally fabricated.
+4. Conversations are not stored as transcripts by the documented companion backend.
+5. No response is automatically considered a missed medication dose.
+6. No response is automatically treated as an emergency.
+7. API secrets remain server-side.
+8. Demo data is fictional.
+9. Medical information is not exposed to unauthorised members.
+10. AI is not a replacement for professional medical care.
+
+Read [Security and Privacy](docs/SECURITY.md).
+
+---
+
+## 🏗️ Project documentation
+
+| Document | Purpose |
+|---|---|
+| [Competition Judge Guide](docs/COMPETITION-JUDGE-GUIDE.md) | Product story, judging criteria and demonstration |
+| [Demo Guide](docs/DEMO.md) | Step-by-step judge walkthrough |
+| [Architecture](docs/ARCHITECTURE.md) | Technical architecture and data flow |
+| [Security](docs/SECURITY.md) | Privacy, permissions and threat model |
+| [Implementation Audit](docs/AUDIT.md) | Implemented, tested and unverified capabilities |
+| [Changelog](CHANGELOG.md) | Project development history |
+
+---
+
+## 🧪 Testing
+
+The repository includes automated tests for application logic, security rules and user journeys.
+
+Run:
+
+```bash
+npm run typecheck
+
+npm run lint
+
+npm test
+
+npm run test:rules
+
+npm run test:e2e
+
+npm run build
+```
+
+Run the commands and inspect their actual results before describing the submission as fully passing.
+
+---
+
+## 🌱 Our vision
+
+We imagine a world where older adults can feel more independent, families can feel more connected, and technology can make care more personal.
+
+Pookie is being built around a simple belief:
+
+**The best technology does not replace care. It helps people care better.**
+
+# POOKIE
+### A little care, a lot of love. 💗
